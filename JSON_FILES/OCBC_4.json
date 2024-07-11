@@ -1,0 +1,304 @@
+{
+    "information_details": [
+        {
+            "deposits": "360 ACCOUNT",
+            "account_number": "62801.0",
+            "od_limit": "",
+            "currency_balance": "",
+            "sgd_balance": "78227.4"
+        },
+        {
+            "deposits": "BONUS + SAVINGS ACCOUNT",
+            "account_number": "77701.0",
+            "od_limit": "",
+            "currency_balance": "",
+            "sgd_balance": "28009.22"
+        },
+        {
+            "deposits": "Your Total Singapore Dollar Deposits",
+            "account_number": "",
+            "od_limit": "",
+            "currency_balance": "",
+            "sgd_balance": "106236.62"
+        },
+        {
+            "deposits": "Your Total Singapore Dollar Overdraft",
+            "account_number": "",
+            "od_limit": "",
+            "currency_balance": "",
+            "sgd_balance": "0.0"
+        }
+    ],
+    "transaction_details": [
+        {
+            "id": 1,
+            "transactions": [
+                {
+                    "transaction_date": "01 JUN",
+                    "value_date": "01 JUN",
+                    "description": "BALANCE B/F FAST PAYMENT 0039460830 to Asia Wealth Plat INVS - Investment &",
+                    "cheque": "",
+                    "withdrawal": "400.0",
+                    "deposit": "",
+                    "balance": "71,726.55 71,326.55"
+                },
+                {
+                    "transaction_date": "02 JUN",
+                    "value_date": "02 JUN",
+                    "description": "Securitie FUND TRANSFER",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "833.77",
+                    "balance": "72160.32"
+                },
+                {
+                    "transaction_date": "02 JUN",
+                    "value_date": "02 JUN",
+                    "description": "from OCBC OTHR - Credit card FUND TRANSFER",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "300.0",
+                    "balance": "72460.32"
+                },
+                {
+                    "transaction_date": "04 JUN",
+                    "value_date": "04 JUN",
+                    "description": "from OCBC OTHR -  LOVE U FAST PAYMENT 7107 to CCRD - Credit Card Payment",
+                    "cheque": "",
+                    "withdrawal": "365.09",
+                    "deposit": "",
+                    "balance": "72095.23"
+                },
+                {
+                    "transaction_date": "06 JUN",
+                    "value_date": "07 JUN",
+                    "description": "FUND TRANSFER 77701 to own account",
+                    "cheque": "",
+                    "withdrawal": "500.0",
+                    "deposit": "",
+                    "balance": "71234.17"
+                },
+                {
+                    "transaction_date": "08 JUN",
+                    "value_date": "08 JUN",
+                    "description": "SAVG - Savings FAST PAYMENT 2313 CCRD - Credit Card Payment",
+                    "cheque": "",
+                    "withdrawal": "1288.69",
+                    "deposit": "",
+                    "balance": "69945.48"
+                },
+                {
+                    "transaction_date": "09 JUN",
+                    "value_date": "09 JUN",
+                    "description": "BONUS INTEREST 360 SALARY BONUS",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "40.67",
+                    "balance": "69986.15"
+                },
+                {
+                    "transaction_date": "18 JUN",
+                    "value_date": "18 JUN",
+                    "description": "IBG GIRO COLL 8469101S HDB - SPS HDB - SPT 8469101S.",
+                    "cheque": "",
+                    "withdrawal": "88.2",
+                    "deposit": "",
+                    "balance": "69897.95"
+                },
+                {
+                    "transaction_date": "20 JUN",
+                    "value_date": "21 JUN",
+                    "description": "FAST PAYMENT 0063 toY OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "500.0",
+                    "deposit": "",
+                    "balance": "69397.95"
+                },
+                {
+                    "transaction_date": "24 JUN",
+                    "value_date": "24 JUN",
+                    "description": "FAST PAYMENT 0063 to YY OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "400.0",
+                    "deposit": "",
+                    "balance": "68997.95"
+                },
+                {
+                    "transaction_date": "26 JUN",
+                    "value_date": "26 JUN",
+                    "description": "CASH WITHDRAWAL ATM xx-7756 OCBC-959 JURONG",
+                    "cheque": "W",
+                    "withdrawal": "800.0",
+                    "deposit": "",
+                    "balance": "68197.95"
+                },
+                {
+                    "transaction_date": "28 JUN",
+                    "value_date": "28 JUN",
+                    "description": "PAYMENT/TRANSFER DBSS, from ASIA WEALTH PL INVS SA-ALWTWTDJC2",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "2997.43",
+                    "balance": "71195.38"
+                },
+                {
+                    "transaction_date": "28 JUN",
+                    "value_date": "28 JUN",
+                    "description": "PAYMENT/TRANSFER DBSS, from ASIA WEALTH PL INVS SA-062TIHCXFU",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "1545.43",
+                    "balance": "72740.81"
+                },
+                {
+                    "transaction_date": "29 JUN",
+                    "value_date": "29 JUN",
+                    "description": "FUND TRANSFER from OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "400.0",
+                    "balance": "73140.81"
+                },
+                {
+                    "transaction_date": "29 JUN",
+                    "value_date": "29 JUN",
+                    "description": "CASH SATM xx-7756 UOB New Tiong Bahru Mark",
+                    "cheque": "",
+                    "withdrawal": "200.0",
+                    "deposit": "",
+                    "balance": "72940.81"
+                },
+                {
+                    "transaction_date": "30 JUN",
+                    "value_date": "30 JUN",
+                    "description": "GIRO - SALARY SINGAPORE",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "5416.0",
+                    "balance": "78356.81"
+                },
+                {
+                    "transaction_date": "30 JUN",
+                    "value_date": "30 JUN",
+                    "description": "BEST ELECTRICITY SU INV627360 INTEREST CREDIT BALANCE C/F",
+                    "cheque": "",
+                    "withdrawal": "132.31",
+                    "deposit": "",
+                    "balance": "78224.5"
+                },
+                {
+                    "transaction_date": "30 JUN",
+                    "value_date": "30 JUN",
+                    "description": "",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "2.9",
+                    "balance": "78227.4"
+                },
+                {
+                    "transaction_date": "",
+                    "value_date": "",
+                    "description": "",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "78227.4"
+                }
+            ],
+            "transaction_summary": [
+                {
+                    "summary_type": "Total Withdrawals/Deposits",
+                    "withdrawal": "5035.35",
+                    "deposit": "11536.2"
+                },
+                {
+                    "summary_type": "Total Interest Paid This Year",
+                    "withdrawal": "",
+                    "deposit": "21.1"
+                },
+                {
+                    "summary_type": "Average Balance",
+                    "withdrawal": "",
+                    "deposit": "70623.01"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "transactions": [
+                {
+                    "transaction_date": "",
+                    "value_date": "",
+                    "description": "BALANCE B/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "27501.01"
+                },
+                {
+                    "transaction_date": "01 JUN",
+                    "value_date": "01 JUN",
+                    "description": "BONUS INTEREST",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "2.02",
+                    "balance": "27503.03"
+                },
+                {
+                    "transaction_date": "01 JUN",
+                    "value_date": "01 JUN",
+                    "description": "MTHLY NO W/D BONUS INTEREST MTHLY NO W/D&SAVE",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "5.05",
+                    "balance": "27508.08"
+                },
+                {
+                    "transaction_date": "06 JUN",
+                    "value_date": "07 JUN",
+                    "description": "FUND TRANSFER 62801 from own account SAVG - Savings",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "500.0",
+                    "balance": "28008.08"
+                },
+                {
+                    "transaction_date": "30 JUN",
+                    "value_date": "30 JUN",
+                    "description": "INTEREST CREDIT",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "1.14",
+                    "balance": "28009.22"
+                },
+                {
+                    "transaction_date": "",
+                    "value_date": "",
+                    "description": "BALANCE C/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "28009.22"
+                }
+            ],
+            "transaction_summary": [
+                {
+                    "summary_type": "Total Withdrawals/Deposits",
+                    "withdrawal": "0.0",
+                    "deposit": "508.21"
+                },
+                {
+                    "summary_type": "Total Interest Paid This Year",
+                    "withdrawal": "",
+                    "deposit": "215.0"
+                },
+                {
+                    "summary_type": "Average Balance",
+                    "withdrawal": "",
+                    "deposit": "27908.08"
+                }
+            ]
+        }
+    ],
+    "time_deposit_details": []
+}

@@ -1,0 +1,187 @@
+{
+    "information_details": [],
+    "transaction_details": [
+        {
+            "id": 1,
+            "transactions": [
+                {
+                    "transaction_date": "",
+                    "value_date": "03 APR",
+                    "description": "FUND TRANSFER from OCBC OTHR - Credit card",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "390.0",
+                    "balance": "93728.15"
+                },
+                {
+                    "transaction_date": "02 APR",
+                    "value_date": "03 APR",
+                    "description": "FUND TRANSFER from OCBC OTHR - Chiro practic",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "1700.0",
+                    "balance": "95428.15"
+                },
+                {
+                    "transaction_date": "02 APR",
+                    "value_date": "03 APR",
+                    "description": "FUND TRANSFER from OCBC OTHR - ILOV EYOU",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "300.0",
+                    "balance": "95728.15"
+                },
+                {
+                    "transaction_date": "02 APR",
+                    "value_date": "03 APR",
+                    "description": "FAST PAYMENT 0039460830 to Asia Wealth Plat INVS - Investment & Securitie",
+                    "cheque": "",
+                    "withdrawal": "400.0",
+                    "deposit": "",
+                    "balance": "95328.15"
+                },
+                {
+                    "transaction_date": "02 APR",
+                    "value_date": "03 APR",
+                    "description": "POS PURCHASE NETS ONE OUNCE xx-7756 ONE OUNCE P",
+                    "cheque": "",
+                    "withdrawal": "118.0",
+                    "deposit": "",
+                    "balance": "95210.15"
+                },
+                {
+                    "transaction_date": "09 APR",
+                    "value_date": "09 APR",
+                    "description": "PAY OTHER BK VS/MC. MASTERCARD 2313 INTERNET",
+                    "cheque": "",
+                    "withdrawal": "3929.11",
+                    "deposit": "",
+                    "balance": "91281.04"
+                },
+                {
+                    "transaction_date": "09 APR",
+                    "value_date": "09 APR",
+                    "description": "PAY OTHER BK VS/MC. VISA CARD 7107 INTERNET",
+                    "cheque": "",
+                    "withdrawal": "561.89",
+                    "deposit": "",
+                    "balance": "90719.15"
+                },
+                {
+                    "transaction_date": "09 APR",
+                    "value_date": "09 APR",
+                    "description": "PAY OTHER BK VS/MC. MASTERCARD 9340 INTERNET",
+                    "cheque": "",
+                    "withdrawal": "415.89",
+                    "deposit": "",
+                    "balance": "90303.26"
+                },
+                {
+                    "transaction_date": "12 APR",
+                    "value_date": "12 APR",
+                    "description": "BONUS INTEREST 360 SALARY BONUS",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "44.58",
+                    "balance": "90347.84"
+                },
+                {
+                    "transaction_date": "19 APR",
+                    "value_date": "19 APR",
+                    "description": "IBG GIRO COLL 8469101S HDB - SPS HDB - SPT 8469101S",
+                    "cheque": "",
+                    "withdrawal": "88.2",
+                    "deposit": "",
+                    "balance": "90259.64"
+                },
+                {
+                    "transaction_date": "28 APR",
+                    "value_date": "28 APR",
+                    "description": "FAST PAYMENT 0630 toY -",
+                    "cheque": "",
+                    "withdrawal": "400.0",
+                    "deposit": "",
+                    "balance": "89859.64"
+                }
+            ],
+            "transaction_summary": []
+        },
+        {
+            "id": 2,
+            "transactions": [
+                {
+                    "transaction_date": "02 APR",
+                    "value_date": "",
+                    "description": "BALANCE B/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "93338.15"
+                },
+                {
+                    "transaction_date": "29 APR",
+                    "value_date": "29 APR",
+                    "description": "FUND TRANSFER from OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "400.00",
+                    "balance": "90259.64"
+                },
+                {
+                    "transaction_date": "30 APR",
+                    "value_date": "30 APR",
+                    "description": "GIRO - SALARY SALA SINGAPORE 2104260337 13",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "8980.00",
+                    "balance": "99239.64"
+                },
+                {
+                    "transaction_date": "30 APR",
+                    "value_date": "30 APR",
+                    "description": "IBG GIRO COLL A859230001 BEST ELECTRICITY SU INV583754",
+                    "cheque": "",
+                    "withdrawal": "101.75",
+                    "deposit": "",
+                    "balance": "99137.89"
+                },
+                {
+                    "transaction_date": "30 APR",
+                    "value_date": "30 APR",
+                    "description": "INTEREST CREDIT",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "3.77",
+                    "balance": "99141.66"
+                },
+                {
+                    "transaction_date": "",
+                    "value_date": "",
+                    "description": "BALANCE C/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "99141.66"
+                }
+            ],
+            "transaction_summary": [
+                {
+                    "summary_type": "Total Withdrawals/Deposits",
+                    "withdrawal": "6014.84",
+                    "deposit": "11,818.35,"
+                },
+                {
+                    "summary_type": "Total Interest Paid This Year",
+                    "withdrawal": "",
+                    "deposit": "15.18"
+                },
+                {
+                    "summary_type": "Average Balance",
+                    "withdrawal": "",
+                    "deposit": "91762.52"
+                }
+            ]
+        }
+    ],
+    "time_deposit_details": []
+}
