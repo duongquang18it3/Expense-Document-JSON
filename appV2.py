@@ -7,7 +7,7 @@ import io
 
 st.set_page_config(layout="wide", page_title="")
 
-# Custom CSS to hide Streamlit elements
+# Custom CSS to hide Streamlit elements and style the JSON content box
 st.markdown("""
     <style>
         /* Hide Streamlit header, footer, and burger menu */
@@ -15,6 +15,22 @@ st.markdown("""
         footer {visibility: hidden;}
         .css-1rs6os.edgvbvh3 {visibility: hidden;} /* This targets the "Fork me on GitHub" ribbon */
         .css-15tx938.egzxvld1 {visibility: hidden;} /* This targets the GitHub icon in the menu */
+        
+        /* Style for the JSON content box */
+        .json-box {
+            border: 2px solid #d3d3d3;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .json-box-label {
+            font-weight: bold;
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            position: absolute;
+            margin-top: -20px;
+            margin-left: 10px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -71,7 +87,7 @@ col2, col1 = st.columns([6, 4])
 
 # Create the dropdown and display the PDF
 with col2:
-    st.subheader('Epiklah Expense Document', divider='rainbow')
+    st.subheader('Epiklah Expense Document - JSON data', divider='rainbow')
     document_label = st.selectbox("Select Document", options=[""] + pdf_files, index=0)
 
     if document_label:
@@ -82,7 +98,7 @@ with col2:
             st.image(images[0], use_column_width=True)
         
         # Score field
-        score = st.number_input(label="Score", min_value=0, max_value=10, value=0, step=1)
+        score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1)
         
         if st.button("Done and Submit", type="primary"):
             # Collect all form data
@@ -111,8 +127,9 @@ with col2:
             
             st.success("Data submitted successfully!")
 
-# Display JSON content in the left column
+# Display JSON content in the left column with a border
 with col1:
+    
     st.subheader('JSON Content', divider='rainbow')
     if document_label:
         json_filename = os.path.splitext(document_label)[0] + ".json"
@@ -121,6 +138,44 @@ with col1:
         if os.path.exists(json_path):
             with open(json_path, "r") as json_file:
                 json_content = json.load(json_file)
-                st.json(json_content)
+
+            # Create tabs for different sections
+            tabs = st.tabs(["Information Details", "Transaction Details", "Time Deposit Details"])
+            
+            with tabs[0]:
+                st.markdown("### Information Details")
+                for i, detail in enumerate(json_content.get("information_details", [])):
+                    st.text_input(f"Deposits {i+1}", value=detail["deposits"], key=f"deposits_{i}")
+                    st.text_input(f"Account Number {i+1}", value=detail["account_number"], key=f"account_number_{i}")
+                    st.text_input(f"OD Limit {i+1}", value=detail["od_limit"], key=f"od_limit_{i}")
+                    st.text_input(f"Currency Balance {i+1}", value=detail["currency_balance"], key=f"currency_balance_{i}")
+                    st.text_input(f"SGD Balance {i+1}", value=detail["sgd_balance"], key=f"sgd_balance_{i}")
+
+            with tabs[1]:
+                st.markdown("### Transaction Details")
+                for t, transaction_detail in enumerate(json_content.get("transaction_details", [])):
+                    st.markdown(f"#### Transaction {t+1}")
+                    for j, transaction in enumerate(transaction_detail.get("transactions", [])):
+                        st.text_input(f"Value Date {t+1}.{j+1}", value=transaction["value_date"], key=f"value_date_{t}_{j}")
+                        st.text_input(f"Description {t+1}.{j+1}", value=transaction["description"], key=f"description_{t}_{j}")
+                        st.text_input(f"Cheque {t+1}.{j+1}", value=transaction["cheque"], key=f"cheque_{t}_{j}")
+                        st.text_input(f"Withdrawal {t+1}.{j+1}", value=transaction["withdrawal"], key=f"withdrawal_{t}_{j}")
+                        st.text_input(f"Deposit {t+1}.{j+1}", value=transaction["deposit"], key=f"deposit_{t}_{j}")
+                        st.text_input(f"Balance {t+1}.{j+1}", value=transaction["balance"], key=f"balance_{t}_{j}")
+
+                    st.markdown(f"##### Transaction Summary {t+1}")
+                    for k, summary in enumerate(transaction_detail.get("transaction_summary", [])):
+                        st.text_input(f"Summary Type {t+1}.{k+1}", value=summary["summary_type"], key=f"summary_type_{t}_{k}")
+                        st.text_input(f"Withdrawal {t+1}.{k+1}", value=summary["withdrawal"], key=f"summary_withdrawal_{t}_{k}")
+                        st.text_input(f"Deposit {t+1}.{k+1}", value=summary["deposit"], key=f"summary_deposit_{t}_{k}")
+
+            with tabs[2]:
+                st.markdown("### Time Deposit Details")
+                for l, time_deposit in enumerate(json_content.get("time_deposit_details", [])):
+                    st.text_input(f"Account Number {l+1}", value=time_deposit["account_number"], key=f"time_deposit_account_number_{l}")
+                    st.text_input(f"Deposit {l+1}", value=time_deposit["deposit"], key=f"time_deposit_deposit_{l}")
+                    st.text_input(f"Maturity Date {l+1}", value=time_deposit["maturity_date"], key=f"time_deposit_maturity_date_{l}")
+                    st.text_input(f"Balance {l+1}", value=time_deposit["balance"], key=f"time_deposit_balance_{l}")
+
         else:
             st.error(f"No JSON file found for {document_label}")
