@@ -140,7 +140,7 @@ with col1:
                 json_content = json.load(json_file)
 
             # Create tabs for different sections
-            tabs = st.tabs(["Information Details", "Transaction Details", "Time Deposit Details"])
+            tabs = st.tabs(["Information Details", "Transaction Details", "Time Deposit Details", "JSON content"])
             
             with tabs[0]:
                 st.markdown("### Information Details")
@@ -152,22 +152,25 @@ with col1:
                     st.text_input(f"SGD Balance {i+1}", value=detail["sgd_balance"], key=f"sgd_balance_{i}")
 
             with tabs[1]:
-                st.markdown("### Transaction Details")
-                for t, transaction_detail in enumerate(json_content.get("transaction_details", [])):
-                    st.markdown(f"#### Transaction {t+1}")
-                    for j, transaction in enumerate(transaction_detail.get("transactions", [])):
-                        st.text_input(f"Value Date {t+1}.{j+1}", value=transaction["value_date"], key=f"value_date_{t}_{j}")
-                        st.text_input(f"Description {t+1}.{j+1}", value=transaction["description"], key=f"description_{t}_{j}")
-                        st.text_input(f"Cheque {t+1}.{j+1}", value=transaction["cheque"], key=f"cheque_{t}_{j}")
-                        st.text_input(f"Withdrawal {t+1}.{j+1}", value=transaction["withdrawal"], key=f"withdrawal_{t}_{j}")
-                        st.text_input(f"Deposit {t+1}.{j+1}", value=transaction["deposit"], key=f"deposit_{t}_{j}")
-                        st.text_input(f"Balance {t+1}.{j+1}", value=transaction["balance"], key=f"balance_{t}_{j}")
+                subtab = st.selectbox("Select Transaction", options=[f"Transaction {i+1}" for i in range(len(json_content.get("transaction_details", [])))], index=0)
+                selected_index = int(subtab.split()[1]) - 1
+                
+                transaction_detail = json_content.get("transaction_details", [])[selected_index]
+                
+                st.markdown(f"#### {subtab}")
+                for j, transaction in enumerate(transaction_detail.get("transactions", [])):
+                    st.text_input(f"Value Date {selected_index+1}.{j+1}", value=transaction["value_date"], key=f"value_date_{selected_index}_{j}")
+                    st.text_input(f"Description {selected_index+1}.{j+1}", value=transaction["description"], key=f"description_{selected_index}_{j}")
+                    st.text_input(f"Cheque {selected_index+1}.{j+1}", value=transaction["cheque"], key=f"cheque_{selected_index}_{j}")
+                    st.text_input(f"Withdrawal {selected_index+1}.{j+1}", value=transaction["withdrawal"], key=f"withdrawal_{selected_index}_{j}")
+                    st.text_input(f"Deposit {selected_index+1}.{j+1}", value=transaction["deposit"], key=f"deposit_{selected_index}_{j}")
+                    st.text_input(f"Balance {selected_index+1}.{j+1}", value=transaction["balance"], key=f"balance_{selected_index}_{j}")
 
-                    st.markdown(f"##### Transaction Summary {t+1}")
-                    for k, summary in enumerate(transaction_detail.get("transaction_summary", [])):
-                        st.text_input(f"Summary Type {t+1}.{k+1}", value=summary["summary_type"], key=f"summary_type_{t}_{k}")
-                        st.text_input(f"Withdrawal {t+1}.{k+1}", value=summary["withdrawal"], key=f"summary_withdrawal_{t}_{k}")
-                        st.text_input(f"Deposit {t+1}.{k+1}", value=summary["deposit"], key=f"summary_deposit_{t}_{k}")
+                st.markdown(f"##### Transaction Summary {selected_index+1}")
+                for k, summary in enumerate(transaction_detail.get("transaction_summary", [])):
+                    st.text_input(f"Summary Type {selected_index+1}.{k+1}", value=summary["summary_type"], key=f"summary_type_{selected_index}_{k}")
+                    st.text_input(f"Withdrawal {selected_index+1}.{k+1}", value=summary["withdrawal"], key=f"summary_withdrawal_{selected_index}_{k}")
+                    st.text_input(f"Deposit {selected_index+1}.{k+1}", value=summary["deposit"], key=f"summary_deposit_{selected_index}_{k}")
 
             with tabs[2]:
                 st.markdown("### Time Deposit Details")
@@ -176,6 +179,7 @@ with col1:
                     st.text_input(f"Deposit {l+1}", value=time_deposit["deposit"], key=f"time_deposit_deposit_{l}")
                     st.text_input(f"Maturity Date {l+1}", value=time_deposit["maturity_date"], key=f"time_deposit_maturity_date_{l}")
                     st.text_input(f"Balance {l+1}", value=time_deposit["balance"], key=f"time_deposit_balance_{l}")
-
+            with tabs[3]:
+                st.json(json_content)
         else:
             st.error(f"No JSON file found for {document_label}")
