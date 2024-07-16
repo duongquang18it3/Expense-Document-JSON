@@ -134,9 +134,9 @@ with col2:
         )
 
         selected_rows = grid_response["selected_rows"]
-        if not pdf_files_df.empty and selected_rows:
+        if len(selected_rows) > 0:
             st.session_state.selected_pdf = selected_rows[0]["PDF Files"]
-            st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+            st.session_state.current_page = 0   # Reset to first page when a new PDF is selected
 
     # Update this block to add a spinner
     if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
