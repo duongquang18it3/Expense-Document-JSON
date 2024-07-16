@@ -1,3 +1,7 @@
 streamlit
 Pillow
 PyMuPDF
+pandas
+pysftp
+paramiko
+streamlit-aggrid
