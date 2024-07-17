@@ -112,11 +112,12 @@ def display_pdf_and_convert_to_image(pdf_content):
 # Create the two-column layout
 col2, col1 = st.columns([4.5, 5.5])
 
-# Display the folders and their files in dropdowns
+# Display the folders and their files in dropdowns within an expander
 with col2:
     st.subheader('Epiklah Expense Document', divider='rainbow')
-    for folder in all_folders:
-        with st.expander(f"Select Document from {folder}"):
+    with st.expander("Select Document"):
+        for folder in all_folders:
+            st.markdown(f"### {folder}")
             try:
                 with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
                     sftp.cwd(os.path.join(sftp_root_directory, folder))
@@ -178,7 +179,6 @@ with col2:
                 st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json')
                 
                 st.success("Data submitted successfully!")
-
 # Display JSON content in the left column with tabs and subtabs
 with col1:
     st.subheader('JSON Data Table', divider='rainbow')
