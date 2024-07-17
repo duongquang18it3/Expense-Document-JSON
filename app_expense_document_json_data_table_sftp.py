@@ -117,9 +117,10 @@ col2, col1 = st.columns([4.5, 5.5])
 with col2:
     st.subheader('Epiklah Expense Document', divider='rainbow')
     with st.expander("Select Document"):
-        selected_pdf = st.selectbox("Select a PDF file", options=pdf_files, index=0)
-        st.session_state.selected_pdf = selected_pdf
-        st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+        selected_pdf = st.selectbox("Select a PDF file", options=[""] + pdf_files, index=0, key="pdf_selector")
+        if selected_pdf:
+            st.session_state.selected_pdf = selected_pdf
+            st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
 
     # Update this block to add a spinner
     if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
