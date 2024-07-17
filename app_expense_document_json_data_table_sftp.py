@@ -145,7 +145,7 @@ with col2:
             update_mode=GridUpdateMode.SELECTION_CHANGED,
             height=170,
             fit_columns_on_grid_load=True,
-            columns_auto_size_mode = True
+            columns_auto_size_mode=True
         )
 
         selected_rows = grid_response["selected_rows"]
