@@ -224,30 +224,6 @@ with col1:
                 edited_time_deposit_details = st.data_editor(time_deposit_details_df, num_rows="dynamic", key='time_deposit_editor')
                 st.session_state.edited_time_deposit_details = edited_time_deposit_details.to_dict(orient='records')
 
-            if st.button("Done and Submit JSON", type="primary", key='done_submit_json'):
-                # Collect all form data
-                form_data = {
-                    "Document Label": selected_pdf,
-                    "Score": st.session_state.get('score', 0),
-                    "information_details": st.session_state.edited_info_details,
-                    "transaction_details": [
-                        {
-                            "transactions": st.session_state.edited_transactions[i],
-                            "transaction_summary": st.session_state.edited_transaction_summary[i]
-                        } for i in range(len(st.session_state.edited_transactions))
-                    ],
-                    "time_deposit_details": st.session_state.edited_time_deposit_details
-                }
-                
-                # Write JSON data to a file
-                with open('submitted_data.json', 'w') as json_file:
-                    json.dump(form_data, json_file, indent=4)
-
-                # Provide download button for JSON file
-                with open('submitted_data.json', 'r') as json_file:
-                    json_data = json_file.read()
-                st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json_json')
-                
-                st.success("Data submitted successfully!")
+           
         else:
             st.error(f"No JSON file found for {selected_pdf}")
