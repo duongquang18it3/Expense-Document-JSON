@@ -7,7 +7,6 @@ import io
 import pandas as pd
 import pysftp
 from paramiko import SSHException
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 st.set_page_config(layout="wide", page_title="")
 
@@ -43,37 +42,22 @@ sftp_host = "hotfolder.epik.live"
 sftp_username = "spf"
 sftp_password = "1234@BCD"
 sftp_directory = "/home/spf/watching_folder/Bankstatement"
-local_directory = "Bankfolder"
-
-# Create local directory if it does not exist
-if not os.path.exists(local_directory):
-    os.makedirs(local_directory)
 
 # Custom SFTP options to bypass hostkey checking
 cnopts = pysftp.CnOpts()
 cnopts.hostkeys = None
 
-# Function to download files from SFTP
-def download_files_from_sftp():
-    try:
-        with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-            sftp.cwd(sftp_directory)
-            all_files = sftp.listdir()
-            for filename in all_files:
-                local_path = os.path.join(local_directory, filename)
-                if not os.path.exists(local_path):
-                    sftp.get(filename, local_path)
-    except SSHException as e:
-        st.error(f"SSHException: {e}")
+# Connect to SFTP server and list files
+try:
+    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+        sftp.cwd(sftp_directory)
+        all_files = sftp.listdir()
+except SSHException as e:
+    st.error(f"SSHException: {e}")
 
-# Download files if running for the first time
-if not os.listdir(local_directory):
-    download_files_from_sftp()
-
-# Filter PDF and JSON files from local directory
-local_files = os.listdir(local_directory)
-pdf_files = [f for f in local_files if f.endswith('.pdf')]
-json_files = {os.path.splitext(f)[0]: f for f in local_files if f.endswith('.json')}
+# Filter PDF and JSON files
+pdf_files = [f for f in all_files if f.endswith('.pdf')]
+json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
 
 # Initialize session state for page numbers and edited data
 if 'current_page' not in st.session_state:
@@ -90,11 +74,11 @@ if 'selected_pdf' not in st.session_state:
     st.session_state.selected_pdf = ""
 
 # Function to display PDF and convert to image with navigation
-def display_pdf_and_convert_to_image(pdf_path):
+def display_pdf_and_convert_to_image(pdf_content):
     images = []
     original_sizes = []
     try:
-        doc = fitz.open(pdf_path)
+        doc = fitz.open(stream=pdf_content, filetype="pdf")
         total_pages = len(doc)
         current_page = st.session_state.current_page
 
@@ -129,40 +113,27 @@ def display_pdf_and_convert_to_image(pdf_path):
 # Create the two-column layout
 col2, col1 = st.columns([4.5, 5.5])
 
-# Display the PDF files list in a table within an expander
+# Display the PDF files list in a dropdown within an expander
 with col2:
     st.subheader('Epiklah Expense Document', divider='rainbow')
     with st.expander("Select Document"):
-        pdf_files_df = pd.DataFrame(pdf_files, columns=["PDF Files"])
-        
-        gb = GridOptionsBuilder.from_dataframe(pdf_files_df)
-        gb.configure_selection(selection_mode="single", use_checkbox=False)
-        grid_options = gb.build()
-
-        grid_response = AgGrid(
-            pdf_files_df,
-            gridOptions=grid_options,
-            update_mode=GridUpdateMode.SELECTION_CHANGED,
-            height=170,
-            fit_columns_on_grid_load=True,
-            columns_auto_size_mode=True
-        )
-
-        selected_rows = grid_response["selected_rows"]
-        if selected_rows and len(selected_rows) > 0:
-            st.session_state.selected_pdf = selected_rows[0]["PDF Files"]
-            st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+        selected_pdf = st.selectbox("Select a PDF file", options=pdf_files, index=0)
+        st.session_state.selected_pdf = selected_pdf
+        st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
 
     # Update this block to add a spinner
     if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
         selected_pdf = st.session_state.selected_pdf
-        pdf_path = os.path.join(local_directory, selected_pdf)
         
         with st.spinner('Loading ...'):
-            # Display PDF as images
-            images, _ = display_pdf_and_convert_to_image(pdf_path)
-            if images:
-                st.image(images[0], use_column_width=True)
+            # Download and display PDF as images
+            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                sftp.cwd(sftp_directory)
+                with sftp.open(selected_pdf, 'rb') as pdf_file:
+                    pdf_content = pdf_file.read()
+                    images, _ = display_pdf_and_convert_to_image(pdf_content)
+                    if images:
+                        st.image(images[0], use_column_width=True)
 
             # Score field and submit button
             score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
@@ -200,9 +171,11 @@ with col1:
         selected_pdf = st.session_state.selected_pdf
         json_filename = os.path.splitext(selected_pdf)[0]  # Only the base name without extension
         if json_filename in json_files:
-            json_path = os.path.join(local_directory, json_files[json_filename])
-            with open(json_path, 'r') as json_file:
-                json_content = json.load(json_file)
+            json_path = json_files[json_filename]
+            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                sftp.cwd(sftp_directory)
+                with sftp.open(json_path, 'r') as json_file:
+                    json_content = json.load(json_file)
 
             # Create tabs for different sections
             tabs = st.tabs(["Information Details", "Transaction Details", "Time Deposit Details"])
