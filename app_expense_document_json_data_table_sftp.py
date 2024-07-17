@@ -121,17 +121,16 @@ with col2:
                 st.session_state.selected_pdf = pdf_file
                 st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
 
-# Display the selected PDF and JSON content
-if st.session_state.selected_pdf:
-    selected_pdf = st.session_state.selected_pdf
-    # Download and display PDF as images
-    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-        sftp.cwd(sftp_directory)
-        with sftp.open(selected_pdf, 'rb') as pdf_file:
-            pdf_content = pdf_file.read()
-            images, _ = display_pdf_and_convert_to_image(pdf_content)
-            if images:
-                st.image(images[0], use_column_width=True)
+    if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
+        selected_pdf = st.session_state.selected_pdf
+        # Download and display PDF as images
+        with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+            sftp.cwd(sftp_directory)
+            with sftp.open(selected_pdf, 'rb') as pdf_file:
+                pdf_content = pdf_file.read()
+                images, _ = display_pdf_and_convert_to_image(pdf_content)
+                if images:
+                    st.image(images[0], use_column_width=True)
 
     # Score field
     score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1)
