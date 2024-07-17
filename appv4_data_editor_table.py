@@ -117,7 +117,7 @@ with col2:
     st.subheader('Epiklah Expense Document', divider='rainbow')
     with st.expander("Select Document"):
         for folder in all_folders:
-            st.markdown(f"### {folder}")
+            st.markdown(f"#### {folder}")
             try:
                 with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
                     sftp.cwd(os.path.join(sftp_root_directory, folder))
