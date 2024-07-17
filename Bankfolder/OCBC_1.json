@@ -1,0 +1,265 @@
+{
+    "information_details": [
+        {
+            "deposits": "60 ACCOUNT",
+            "account_number": "6281001",
+            "od_limit": "",
+            "currency_balance": "",
+            "sgd_balance": "38,244.68,"
+        },
+        {
+            "deposits": "JONUS + SAVINGS ACCOUNT",
+            "account_number": "7147227",
+            "od_limit": "",
+            "currency_balance": "",
+            "sgd_balance": "39453.14"
+        }
+    ],
+    "transaction_details": [
+        {
+            "id": 1,
+            "transactions": [
+                {
+                    "value_date": "",
+                    "description": "BALANCE B/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "36,799.79"
+                },
+                {
+                    "value_date": "01 JUL",
+                    "description": "FUND TRANSFER 717227 to own account OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "500.00",
+                    "deposit": "",
+                    "balance": "36,299.79"
+                },
+                {
+                    "value_date": "03 JUL",
+                    "description": "cDP CDP 25VA A-1HX-7GmQ-20w CDP-SBJAN23",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "145.87",
+                    "balance": "36,445.66"
+                },
+                {
+                    "value_date": "03 JUL",
+                    "description": "FAST PAYMENT 083630 to OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "1,000.00",
+                    "deposit": "",
+                    "balance": "35,445.66"
+                },
+                {
+                    "value_date": "06 JUL",
+                    "description": "FAST PAYMENT 41197107 to CCRD - Credit Card Payment",
+                    "cheque": "",
+                    "withdrawal": "2,654.98",
+                    "deposit": "",
+                    "balance": "32,790.68"
+                },
+                {
+                    "value_date": "06 JUL",
+                    "description": "FAST PAYMENT 55209340 to CCRD - Credit Card Payment",
+                    "cheque": "",
+                    "withdrawal": "435.74",
+                    "deposit": "",
+                    "balance": "32,354.94"
+                },
+                {
+                    "value_date": "07 JUL",
+                    "description": "FAST PAYMENT 54252313 to CCRD - Credit Card Payment",
+                    "cheque": "",
+                    "withdrawal": "833.25",
+                    "deposit": "",
+                    "balance": "31,521.69"
+                },
+                {
+                    "value_date": "10 JUL",
+                    "description": "IBG GIRO OTHR Company JAN 23 CLAIM",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "2,061.06",
+                    "balance": "33,582.75"
+                },
+                {
+                    "value_date": "11 JUL",
+                    "description": "BONUS INTEREST 360 SALARY BONUS",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "56.66",
+                    "balance": "33,639.41"
+                },
+                {
+                    "value_date": "18 JUL",
+                    "description": "IBG GIRO COLL 8469101S HDB - SPS HDB -",
+                    "cheque": "",
+                    "withdrawal": "88.20",
+                    "deposit": "",
+                    "balance": "33,551.21"
+                },
+                {
+                    "value_date": "18 JUL",
+                    "description": "FAST PAYMENT 083630 to Ho OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "500.00",
+                    "deposit": "",
+                    "balance": "33,051.21"
+                },
+                {
+                    "value_date": "20 JUL",
+                    "description": "CDP CDP 2D63 A-1Ho-5X91-5J CDP-AIMS APAC REIT",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "48.33",
+                    "balance": "33,099.54"
+                },
+                {
+                    "value_date": "20 JUL",
+                    "description": "cDP",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "113.67",
+                    "balance": "33,213.21"
+                },
+                {
+                    "value_date": "21 JUL",
+                    "description": "FUND TRANSFER 6466001 from NG Other",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "660.0",
+                    "balance": "33873.21"
+                },
+                {
+                    "value_date": "25 JUL",
+                    "description": "FUND TRANSFER",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "800.0",
+                    "balance": "34673.21"
+                },
+                {
+                    "value_date": "26 JUL",
+                    "description": "6461001 from J OTHR - Other GIRO - SALARY SALA",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "3570.0",
+                    "balance": "38243.21"
+                },
+                {
+                    "value_date": "31 JUL",
+                    "description": "INTEREST CREDIT",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "1.47",
+                    "balance": "38244.68"
+                },
+                {
+                    "value_date": "",
+                    "description": "BALANCE C/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "38244.68"
+                }
+            ],
+            "transaction_summary": [
+                {
+                    "summary_type": "Total Withdrawals/Deposits",
+                    "withdrawal": "6012.17",
+                    "deposit": "7457.06"
+                },
+                {
+                    "summary_type": "Total Interest Paid This Year",
+                    "withdrawal": "",
+                    "deposit": "10.89"
+                },
+                {
+                    "summary_type": "Average Balance",
+                    "withdrawal": "",
+                    "deposit": "34640.52"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "transactions": [
+                {
+                    "value_date": "",
+                    "description": "BALANCE B/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "38,864.02"
+                },
+                {
+                    "value_date": "01 JUL",
+                    "description": "FUND TRANSFER 6281001 from own account OTHR - Other",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "39,364.02"
+                },
+                {
+                    "value_date": "01 JUL",
+                    "description": "BONUS INTEREST MTHLY NO W/D",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "39,427.62"
+                },
+                {
+                    "value_date": "01 JUL",
+                    "description": "BONUS INTEREST MTHLY NO W/D&SAVE",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "39,451.47"
+                },
+                {
+                    "value_date": "31 JUL",
+                    "description": "INTEREST CREDIT",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "39,453.14"
+                },
+                {
+                    "value_date": "",
+                    "description": "BALANCE C/F",
+                    "cheque": "",
+                    "withdrawal": "",
+                    "deposit": "",
+                    "balance": "39,453.14"
+                }
+            ],
+            "transaction_summary": [
+                {
+                    "summary_type": "Total Withdrawals/Deposits Total Interest Paid This Year",
+                    "withdrawal": "0.00",
+                    "deposit": ""
+                },
+                {
+                    "summary_type": "Average Balance",
+                    "withdrawal": "",
+                    "deposit": "39,451.47"
+                }
+            ]
+        }
+    ],
+    "time_deposit_details": [
+        {
+            "account_number": "386501-1",
+            "deposit": "1",
+            "maturity_date": "11 SEP 2023",
+            "balance": "25000.0"
+        },
+        {
+            "account_number": "386501-2",
+            "deposit": "2",
+            "maturity_date": "11 SEP 2023",
+            "balance": "25000.0"
+        }
+    ]
+}
