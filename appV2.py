@@ -4,6 +4,9 @@ import fitz  # PyMuPDF
 import os
 import json
 import io
+import pandas as pd
+import pysftp
+from paramiko import SSHException
 
 st.set_page_config(layout="wide", page_title="")
 
@@ -34,27 +37,51 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Folder paths
-pdf_folder = "PDF_FILES/"
-json_folder = "JSON_FILES/"
+# SFTP connection details
+sftp_host = "hotfolder.epik.live"
+sftp_username = "spf"
+sftp_password = "1234@BCD"
+sftp_root_directory = "/home/spf/watching_folder/"
 
-# Get list of PDF files
-pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith('.pdf')]
+# Custom SFTP options to bypass hostkey checking
+cnopts = pysftp.CnOpts()
+cnopts.hostkeys = None
 
-# Initialize session state for page numbers
+# Connect to SFTP server and list directories
+try:
+    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+        sftp.cwd(sftp_root_directory)
+        all_folders = sftp.listdir()
+        all_folders = [f for f in all_folders if sftp.isdir(f)]
+except SSHException as e:
+    st.error(f"SSHException: {e}")
+
+# Initialize session state for page numbers and edited data
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 0
+if 'edited_info_details' not in st.session_state:
+    st.session_state.edited_info_details = []
+if 'edited_transactions' not in st.session_state:
+    st.session_state.edited_transactions = {}
+if 'edited_transaction_summary' not in st.session_state:
+    st.session_state.edited_transaction_summary = {}
+if 'edited_time_deposit_details' not in st.session_state:
+    st.session_state.edited_time_deposit_details = []
+if 'selected_pdf' not in st.session_state:
+    st.session_state.selected_pdf = ""
+if 'selected_folder' not in st.session_state:
+    st.session_state.selected_folder = ""
 
 # Function to display PDF and convert to image with navigation
-def display_pdf_and_convert_to_image(pdf_path):
+def display_pdf_and_convert_to_image(pdf_content):
     images = []
     original_sizes = []
     try:
-        doc = fitz.open(pdf_path)
+        doc = fitz.open(stream=pdf_content, filetype="pdf")
         total_pages = len(doc)
         current_page = st.session_state.current_page
 
-        col_empty_PDF, col1_titlePDF, col2, col3, col4 = st.columns([1, 5, 2, 2, 1])
+        col_empty_PDF, col1_titlePDF, col2, col3, col4 = st.columns([0.5, 4, 2.5, 2.5, 0.5])
         with col1_titlePDF:
             st.markdown("#### Preview of the PDF:")
 
@@ -83,103 +110,144 @@ def display_pdf_and_convert_to_image(pdf_path):
     return images, original_sizes
 
 # Create the two-column layout
-col2, col1 = st.columns([6, 4])
+col2, col1 = st.columns([4.5, 5.5])
 
-# Create the dropdown and display the PDF
+# Display the folders and their files in dropdowns
 with col2:
-    st.subheader('Epiklah Expense Document - JSON data', divider='rainbow')
-    document_label = st.selectbox("Select Document", options=[""] + pdf_files, index=0)
+    st.subheader('Epiklah Expense Document', divider='rainbow')
+    for folder in all_folders:
+        with st.expander(f"Select Document from {folder}"):
+            try:
+                with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                    sftp.cwd(os.path.join(sftp_root_directory, folder))
+                    all_files = sftp.listdir()
+            except SSHException as e:
+                st.error(f"SSHException: {e}")
+                continue
 
-    if document_label:
-        # Load and display PDF as images
-        pdf_path = os.path.join(pdf_folder, document_label)
-        images, _ = display_pdf_and_convert_to_image(pdf_path)
-        if images:
-            st.image(images[0], use_column_width=True)
-        
-        # Score field
-        score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1)
-        
-        if st.button("Done and Submit", type="primary"):
-            # Collect all form data
-            form_data = {
-                "Document Label": document_label,
-                "Score": score
-            }
+            # Filter PDF and JSON files
+            pdf_files = [f for f in all_files if f.endswith('.pdf')]
+            json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
             
-            if document_label:
-                json_filename = os.path.splitext(document_label)[0] + ".json"
-                json_path = os.path.join(json_folder, json_filename)
+            selected_pdf = st.selectbox(f"Select a PDF file from {folder}", options=[""] + pdf_files, index=0, key=f"{folder}_pdf_selector")
+            if selected_pdf:
+                st.session_state.selected_pdf = selected_pdf
+                st.session_state.selected_folder = folder
+                st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+
+    # Update this block to add a spinner
+    if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
+        selected_pdf = st.session_state.selected_pdf
+        selected_folder = st.session_state.selected_folder
+        
+        with st.spinner('Loading ...'):
+            # Download and display PDF as images
+            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
+                with sftp.open(selected_pdf, 'rb') as pdf_file:
+                    pdf_content = pdf_file.read()
+                    images, _ = display_pdf_and_convert_to_image(pdf_content)
+                    if images:
+                        st.image(images[0], use_column_width=True)
+
+            # Score field and submit button
+            score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
+            
+            if st.button("Done and Submit", type="primary", key='done_submit'):
+                # Collect all form data
+                form_data = {
+                    "Document Label": selected_pdf,
+                    "Score": score,
+                    "information_details": st.session_state.edited_info_details,
+                    "transaction_details": [
+                        {
+                            "transactions": st.session_state.edited_transactions[i],
+                            "transaction_summary": st.session_state.edited_transaction_summary[i]
+                        } for i in range(len(st.session_state.edited_transactions))
+                    ],
+                    "time_deposit_details": st.session_state.edited_time_deposit_details
+                }
                 
-                if os.path.exists(json_path):
-                    with open(json_path, "r") as json_file:
-                        json_content = json.load(json_file)
-                    form_data["JSON Content"] = json_content
-            
-            # Write JSON data to a file
-            with open('submitted_data.json', 'w') as json_file:
-                json.dump(form_data, json_file, indent=4)
+                # Write JSON data to a file
+                with open('submitted_data.json', 'w') as json_file:
+                    json.dump(form_data, json_file, indent=4)
 
-            # Provide download button for JSON file
-            with open('submitted_data.json', 'r') as json_file:
-                json_data = json_file.read()
-            st.download_button("Download JSON", json_data, "submitted_data.json", "application/json")
-            
-            st.success("Data submitted successfully!")
+                # Provide download button for JSON file
+                with open('submitted_data.json', 'r') as json_file:
+                    json_data = json_file.read()
+                st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json')
+                
+                st.success("Data submitted successfully!")
 
-# Display JSON content in the left column with a border
+# Display JSON content in the left column with tabs and subtabs
 with col1:
-    
-    st.subheader('JSON Content', divider='rainbow')
-    if document_label:
-        json_filename = os.path.splitext(document_label)[0] + ".json"
-        json_path = os.path.join(json_folder, json_filename)
-        
-        if os.path.exists(json_path):
-            with open(json_path, "r") as json_file:
-                json_content = json.load(json_file)
+    st.subheader('JSON Data Table', divider='rainbow')
+    if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
+        selected_pdf = st.session_state.selected_pdf
+        selected_folder = st.session_state.selected_folder
+        json_filename = os.path.splitext(selected_pdf)[0]  # Only the base name without extension
+        if json_filename in json_files:
+            json_path = json_files[json_filename]
+            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
+                with sftp.open(json_path, 'r') as json_file:
+                    json_content = json.load(json_file)
 
             # Create tabs for different sections
-            tabs = st.tabs(["Information Details", "Transaction Details", "Time Deposit Details", "JSON content"])
+            tabs = st.tabs(["Information Details", "Transaction Details", "Time Deposit Details"])
             
             with tabs[0]:
                 st.markdown("### Information Details")
-                for i, detail in enumerate(json_content.get("information_details", [])):
-                    st.text_input(f"Deposits {i+1}", value=detail["deposits"], key=f"deposits_{i}")
-                    st.text_input(f"Account Number {i+1}", value=detail["account_number"], key=f"account_number_{i}")
-                    st.text_input(f"OD Limit {i+1}", value=detail["od_limit"], key=f"od_limit_{i}")
-                    st.text_input(f"Currency Balance {i+1}", value=detail["currency_balance"], key=f"currency_balance_{i}")
-                    st.text_input(f"SGD Balance {i+1}", value=detail["sgd_balance"], key=f"sgd_balance_{i}")
+                info_details_df = pd.DataFrame(json_content.get("information_details", []))
+                edited_info_details = st.data_editor(info_details_df, num_rows="dynamic", key='info_details_editor')
+                st.session_state.edited_info_details = edited_info_details.to_dict(orient='records')
 
             with tabs[1]:
-                subtab = st.selectbox("Select Transaction", options=[f"Transaction {i+1}" for i in range(len(json_content.get("transaction_details", [])))], index=0)
+                subtab = st.selectbox("Select Transaction", options=[f"Transaction {i+1}" for i in range(len(json_content.get("transaction_details", [])))], index=0, key='transaction_select')
                 selected_index = int(subtab.split()[1]) - 1
                 
                 transaction_detail = json_content.get("transaction_details", [])[selected_index]
                 
                 st.markdown(f"#### {subtab}")
-                for j, transaction in enumerate(transaction_detail.get("transactions", [])):
-                    st.text_input(f"Value Date {selected_index+1}.{j+1}", value=transaction["value_date"], key=f"value_date_{selected_index}_{j}")
-                    st.text_input(f"Description {selected_index+1}.{j+1}", value=transaction["description"], key=f"description_{selected_index}_{j}")
-                    st.text_input(f"Cheque {selected_index+1}.{j+1}", value=transaction["cheque"], key=f"cheque_{selected_index}_{j}")
-                    st.text_input(f"Withdrawal {selected_index+1}.{j+1}", value=transaction["withdrawal"], key=f"withdrawal_{selected_index}_{j}")
-                    st.text_input(f"Deposit {selected_index+1}.{j+1}", value=transaction["deposit"], key=f"deposit_{selected_index}_{j}")
-                    st.text_input(f"Balance {selected_index+1}.{j+1}", value=transaction["balance"], key=f"balance_{selected_index}_{j}")
-
+                transactions_df = pd.DataFrame(transaction_detail.get("transactions", []))
+                edited_transactions = st.data_editor(transactions_df, num_rows="dynamic", key=f'transactions_editor_{selected_index}')
+                st.session_state.edited_transactions[selected_index] = edited_transactions.to_dict(orient='records')
+                
                 st.markdown(f"##### Transaction Summary {selected_index+1}")
-                for k, summary in enumerate(transaction_detail.get("transaction_summary", [])):
-                    st.text_input(f"Summary Type {selected_index+1}.{k+1}", value=summary["summary_type"], key=f"summary_type_{selected_index}_{k}")
-                    st.text_input(f"Withdrawal {selected_index+1}.{k+1}", value=summary["withdrawal"], key=f"summary_withdrawal_{selected_index}_{k}")
-                    st.text_input(f"Deposit {selected_index+1}.{k+1}", value=summary["deposit"], key=f"summary_deposit_{selected_index}_{k}")
+                transaction_summary_df = pd.DataFrame(transaction_detail.get("transaction_summary", []))
+                edited_transaction_summary = st.data_editor(transaction_summary_df, num_rows="dynamic", key=f'transaction_summary_editor_{selected_index}')
+                st.session_state.edited_transaction_summary[selected_index] = edited_transaction_summary.to_dict(orient='records')
 
             with tabs[2]:
                 st.markdown("### Time Deposit Details")
-                for l, time_deposit in enumerate(json_content.get("time_deposit_details", [])):
-                    st.text_input(f"Account Number {l+1}", value=time_deposit["account_number"], key=f"time_deposit_account_number_{l}")
-                    st.text_input(f"Deposit {l+1}", value=time_deposit["deposit"], key=f"time_deposit_deposit_{l}")
-                    st.text_input(f"Maturity Date {l+1}", value=time_deposit["maturity_date"], key=f"time_deposit_maturity_date_{l}")
-                    st.text_input(f"Balance {l+1}", value=time_deposit["balance"], key=f"time_deposit_balance_{l}")
-            with tabs[3]:
-                st.json(json_content)
+                time_deposit_details_df = pd.DataFrame(json_content.get("time_deposit_details", []))
+                edited_time_deposit_details = st.data_editor(time_deposit_details_df, num_rows="dynamic", key='time_deposit_editor')
+                st.session_state.edited_time_deposit_details = edited_time_deposit_details.to_dict(orient='records')
+
+            if st.button("Done and Submit JSON", type="primary", key='done_submit_json'):
+                # Collect all form data
+                form_data = {
+                    "Document Label": selected_pdf,
+                    "Score": st.session_state.get('score', 0),
+                    "information_details": st.session_state.edited_info_details,
+                    "transaction_details": [
+                        {
+                            "transactions": st.session_state.edited_transactions[i],
+                            "transaction_summary": st.session_state.edited_transaction_summary[i]
+                        } for i in range(len(st.session_state.edited_transactions))
+                    ],
+                    "time_deposit_details": st.session_state.edited_time_deposit_details
+                }
+                
+                # Write JSON data to a file
+                with open('submitted_data.json', 'w') as json_file:
+                    json.dump(form_data, json_file, indent=4)
+
+                # Provide download button for JSON file
+                with open('submitted_data.json', 'r') as json_file:
+                    json_data = json_file.read()
+                st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json_json')
+                
+                st.success("Data submitted successfully!")
         else:
-            st.error(f"No JSON file found for {document_label}")
+            st.error(f"No JSON file found for {selected_pdf}")
