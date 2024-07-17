@@ -7,6 +7,7 @@ import io
 import pandas as pd
 import pysftp
 from paramiko import SSHException
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 st.set_page_config(layout="wide", page_title="")
 
@@ -113,24 +114,39 @@ def display_pdf_and_convert_to_image(pdf_content):
 # Create the two-column layout
 col2, col1 = st.columns([4, 6])
 
-# Create the expander and display the PDF files list
+# Display the PDF files list in a table
 with col2:
-    with st.expander("Select Document"):
-        for pdf_file in pdf_files:
-            if st.button(pdf_file):
-                st.session_state.selected_pdf = pdf_file
-                st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+    st.markdown("### Select Document")
+    pdf_files_df = pd.DataFrame(pdf_files, columns=["PDF Files"])
+    
+    gb = GridOptionsBuilder.from_dataframe(pdf_files_df)
+    gb.configure_selection(selection_mode="single", use_checkbox=True)
+    grid_options = gb.build()
 
-    if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
-        selected_pdf = st.session_state.selected_pdf
-        # Download and display PDF as images
-        with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-            sftp.cwd(sftp_directory)
-            with sftp.open(selected_pdf, 'rb') as pdf_file:
-                pdf_content = pdf_file.read()
-                images, _ = display_pdf_and_convert_to_image(pdf_content)
-                if images:
-                    st.image(images[0], use_column_width=True)
+    grid_response = AgGrid(
+        pdf_files_df,
+        gridOptions=grid_options,
+        update_mode=GridUpdateMode.SELECTION_CHANGED,
+        height=400,
+        fit_columns_on_grid_load=True
+    )
+
+    selected_rows = grid_response["selected_rows"]
+    if selected_rows:
+        st.session_state.selected_pdf = selected_rows[0]["PDF Files"]
+        st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+
+# Display the selected PDF and JSON content
+if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
+    selected_pdf = st.session_state.selected_pdf
+    # Download and display PDF as images
+    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+        sftp.cwd(sftp_directory)
+        with sftp.open(selected_pdf, 'rb') as pdf_file:
+            pdf_content = pdf_file.read()
+            images, _ = display_pdf_and_convert_to_image(pdf_content)
+            if images:
+                st.image(images[0], use_column_width=True)
 
     # Score field
     score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1)
