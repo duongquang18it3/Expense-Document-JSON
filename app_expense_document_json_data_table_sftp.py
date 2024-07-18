@@ -41,23 +41,20 @@ st.markdown("""
 sftp_host = "hotfolder.epik.live"
 sftp_username = "spf"
 sftp_password = "1234@BCD"
-sftp_directory = "/home/spf/watching_folder/Bankstatement"
+sftp_root_directory = "/home/spf/watching_folder/"
 
 # Custom SFTP options to bypass hostkey checking
 cnopts = pysftp.CnOpts()
 cnopts.hostkeys = None
 
-# Connect to SFTP server and list files
+# Connect to SFTP server and list directories
 try:
     with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-        sftp.cwd(sftp_directory)
-        all_files = sftp.listdir()
+        sftp.cwd(sftp_root_directory)
+        all_folders = sftp.listdir()
+        all_folders = [f for f in all_folders if sftp.isdir(f)]
 except SSHException as e:
     st.error(f"SSHException: {e}")
-
-# Filter PDF and JSON files
-pdf_files = [f for f in all_files if f.endswith('.pdf')]
-json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
 
 # Initialize session state for page numbers and edited data
 if 'current_page' not in st.session_state:
@@ -72,6 +69,8 @@ if 'edited_time_deposit_details' not in st.session_state:
     st.session_state.edited_time_deposit_details = []
 if 'selected_pdf' not in st.session_state:
     st.session_state.selected_pdf = ""
+if 'selected_folder' not in st.session_state:
+    st.session_state.selected_folder = ""
 
 # Function to display PDF and convert to image with navigation
 def display_pdf_and_convert_to_image(pdf_content):
@@ -113,23 +112,39 @@ def display_pdf_and_convert_to_image(pdf_content):
 # Create the two-column layout
 col2, col1 = st.columns([4.5, 5.5])
 
-# Display the PDF files list in a dropdown within an expander
+# Display the folders and their files in dropdowns within an expander
 with col2:
     st.subheader('Epiklah Expense Document', divider='rainbow')
     with st.expander("Select Document"):
-        selected_pdf = st.selectbox("Select a PDF file", options=[""] + pdf_files, index=0, key="pdf_selector")
-        if selected_pdf:
-            st.session_state.selected_pdf = selected_pdf
-            st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
+        for folder in all_folders:
+            st.markdown(f"##### {folder}")
+            try:
+                with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                    sftp.cwd(os.path.join(sftp_root_directory, folder))
+                    all_files = sftp.listdir()
+            except SSHException as e:
+                st.error(f"SSHException: {e}")
+                continue
+
+            # Filter PDF and JSON files
+            pdf_files = [f for f in all_files if f.endswith('.pdf')]
+            json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
+            
+            selected_pdf = st.selectbox(f"Select a PDF file from {folder}", options=[""] + pdf_files, index=0, key=f"{folder}_pdf_selector")
+            if selected_pdf:
+                st.session_state.selected_pdf = selected_pdf
+                st.session_state.selected_folder = folder
+                st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
 
     # Update this block to add a spinner
     if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
         selected_pdf = st.session_state.selected_pdf
+        selected_folder = st.session_state.selected_folder
         
         with st.spinner('Loading ...'):
             # Download and display PDF as images
             with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                sftp.cwd(sftp_directory)
+                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
                 with sftp.open(selected_pdf, 'rb') as pdf_file:
                     pdf_content = pdf_file.read()
                     images, _ = display_pdf_and_convert_to_image(pdf_content)
@@ -164,17 +179,17 @@ with col2:
                 st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json')
                 
                 st.success("Data submitted successfully!")
-
 # Display JSON content in the left column with tabs and subtabs
 with col1:
     st.subheader('JSON Data Table', divider='rainbow')
     if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
         selected_pdf = st.session_state.selected_pdf
+        selected_folder = st.session_state.selected_folder
         json_filename = os.path.splitext(selected_pdf)[0]  # Only the base name without extension
         if json_filename in json_files:
             json_path = json_files[json_filename]
             with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                sftp.cwd(sftp_directory)
+                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
                 with sftp.open(json_path, 'r') as json_file:
                     json_content = json.load(json_file)
 
@@ -209,30 +224,6 @@ with col1:
                 edited_time_deposit_details = st.data_editor(time_deposit_details_df, num_rows="dynamic", key='time_deposit_editor')
                 st.session_state.edited_time_deposit_details = edited_time_deposit_details.to_dict(orient='records')
 
-            if st.button("Done and Submit JSON", type="primary", key='done_submit_json'):
-                # Collect all form data
-                form_data = {
-                    "Document Label": selected_pdf,
-                    "Score": st.session_state.get('score', 0),
-                    "information_details": st.session_state.edited_info_details,
-                    "transaction_details": [
-                        {
-                            "transactions": st.session_state.edited_transactions[i],
-                            "transaction_summary": st.session_state.edited_transaction_summary[i]
-                        } for i in range(len(st.session_state.edited_transactions))
-                    ],
-                    "time_deposit_details": st.session_state.edited_time_deposit_details
-                }
-                
-                # Write JSON data to a file
-                with open('submitted_data.json', 'w') as json_file:
-                    json.dump(form_data, json_file, indent=4)
-
-                # Provide download button for JSON file
-                with open('submitted_data.json', 'r') as json_file:
-                    json_data = json_file.read()
-                st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json_json')
-                
-                st.success("Data submitted successfully!")
+           
         else:
             st.error(f"No JSON file found for {selected_pdf}")
