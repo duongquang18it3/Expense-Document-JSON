@@ -13,7 +13,7 @@ st.set_page_config(layout="wide", page_title="")
 # Custom CSS to hide Streamlit elements and style the JSON content box
 st.markdown("""
     <style>
-        /* Hide Streamlit header, footer, and burger menu */
+        /* Hide Streamlit header, footer, và burger menu */
         header {visibility: hidden;}
         footer {visibility: hidden;}
         .css-1rs6os.edgvbvh3 {visibility: hidden;} /* This targets the "Fork me on GitHub" ribbon */
@@ -117,7 +117,7 @@ with col2:
     st.subheader('Epiklah Expense Document', divider='rainbow')
     with st.expander("Select Document"):
         for folder in all_folders:
-            st.markdown(f"##### {folder}")
+            st.markdown(f"### {folder}")
             try:
                 with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
                     sftp.cwd(os.path.join(sftp_root_directory, folder))
@@ -134,12 +134,14 @@ with col2:
             if selected_pdf:
                 st.session_state.selected_pdf = selected_pdf
                 st.session_state.selected_folder = folder
+                st.session_state.selected_json = json_files.get(os.path.splitext(selected_pdf)[0])
                 st.session_state.current_page = 0  # Reset to first page when a new PDF is selected
 
     # Update this block to add a spinner
     if 'selected_pdf' in st.session_state and st.session_state.selected_pdf:
         selected_pdf = st.session_state.selected_pdf
         selected_folder = st.session_state.selected_folder
+        selected_json = st.session_state.selected_json
         
         with st.spinner('Loading ...'):
             # Download and display PDF as images
@@ -169,16 +171,26 @@ with col2:
                     "time_deposit_details": st.session_state.edited_time_deposit_details
                 }
                 
-                # Write JSON data to a file
-                with open('submitted_data.json', 'w') as json_file:
+                # Write JSON data to a temporary file
+                json_filename = selected_json
+                with open(json_filename, 'w') as json_file:
                     json.dump(form_data, json_file, indent=4)
 
-                # Provide download button for JSON file
-                with open('submitted_data.json', 'r') as json_file:
-                    json_data = json_file.read()
-                st.download_button("Download JSON", json_data, "submitted_data.json", "application/json", key='download_json')
+                # Upload updated JSON file back to SFTP with the original name
+                if selected_json:
+                    updated_json_path = os.path.join(sftp_root_directory, selected_folder, selected_json)
+                    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                        sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
+                        sftp.put(json_filename)
+                        
                 
-                st.success("Data submitted successfully!")
+                # Provide download button for JSON file
+                with open(json_filename, 'r') as json_file:
+                    json_data = json_file.read()
+                st.download_button("Download JSON", json_data, json_filename, "application/json", key='download_json')
+                
+                st.success("Data submitted successfully and updated JSON file on server!")
+
 # Display JSON content in the left column with tabs and subtabs
 with col1:
     st.subheader('JSON Data Table', divider='rainbow')
@@ -223,7 +235,5 @@ with col1:
                 time_deposit_details_df = pd.DataFrame(json_content.get("time_deposit_details", []))
                 edited_time_deposit_details = st.data_editor(time_deposit_details_df, num_rows="dynamic", key='time_deposit_editor')
                 st.session_state.edited_time_deposit_details = edited_time_deposit_details.to_dict(orient='records')
-
-           
         else:
             st.error(f"No JSON file found for {selected_pdf}")
