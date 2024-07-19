@@ -221,7 +221,7 @@ col2, col1 = st.columns([4.5, 5.5])
 
 # Display the folders and their files in dropdowns within an expander
 with col2:
-    st.subheader('Epiklah Expense Document', divider='rainbow')
+    st.subheader('PreFlight Cockpit', divider='rainbow')
     with st.expander("Select Document"):
         for folder in all_folders:
             st.markdown(f"### {folder}")
