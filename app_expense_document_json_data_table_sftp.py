@@ -216,119 +216,117 @@ def reset_selections(except_folder):
         if folder != except_folder:
             if f"{folder}_file_selector" in st.session_state:
                 del st.session_state[f"{folder}_file_selector"]
+
+# Sidebar menu
+selected_page = st.sidebar.radio("Select Page", ["Bankstatement", "Invoice", "Receipt", "Business Card"])
+
 # Create the two-column layout
 col2, col1 = st.columns([4.5, 5.5])
 
 # Display the folders and their files in dropdowns within an expander
 with col2:
-    st.subheader('PreFlight Cockpit', divider='rainbow')
+    st.subheader(f'PreFlight Cockpit - {selected_page}', divider='rainbow')
     with st.expander("Select Document"):
-        for folder in all_folders:
-            st.markdown(f"### {folder}")
-            try:
-                with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                    sftp.cwd(os.path.join(sftp_root_directory, folder))
-                    all_files = sftp.listdir()
-            except SSHException as e:
-                st.error(f"SSHException: {e}")
-                continue
+        folder = selected_page
+        try:
+            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                sftp.cwd(os.path.join(sftp_root_directory, folder))
+                all_files = sftp.listdir()
+        except SSHException as e:
+            st.error(f"SSHException: {e}")
 
-            # Filter PDF and image files
-            supported_files = [f for f in all_files if f.endswith(('.pdf', '.png', '.jpg', '.jpeg'))]
-            json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
-            
-            selected_file = st.selectbox(f"Select a file from {folder}", options=[""] + supported_files, index=0, key=f"{folder}_file_selector")
-            if selected_file:
-                # Clear previous selections if folder changes
-                if st.session_state.selected_folder != folder:
-                    st.session_state.selected_file = selected_file
-                    st.session_state.selected_folder = folder
-                    st.session_state.selected_json = json_files.get(os.path.splitext(selected_file)[0])
-                    st.session_state.current_page = 0  # Reset to first page when a new file is selected
+        # Filter PDF and image files
+        supported_files = [f for f in all_files if f.endswith(('.pdf', '.png', '.jpg', '.jpeg'))]
+        json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
+        
+        selected_file = st.selectbox(f"Select a file from {folder}", options=[""] + supported_files, index=0, key=f"{folder}_file_selector")
+        if selected_file:
+            st.session_state.selected_file = selected_file
+            st.session_state.selected_folder = folder
+            st.session_state.selected_json = json_files.get(os.path.splitext(selected_file)[0])
+            st.session_state.current_page = 0  # Reset to first page when a new file is selected
+
+    # Update this block to add a spinner
+    if 'selected_file' in st.session_state and st.session_state.selected_file:
+        selected_file = st.session_state.selected_file
+        selected_folder = st.session_state.selected_folder
+        selected_json = st.session_state.selected_json
+        
+        with st.spinner('Loading ...'):
+            # Download and display file as images or PDF pages
+            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
+                if selected_file.endswith('.pdf'):
+                    with sftp.open(selected_file, 'rb') as file:
+                        file_content = file.read()
+                        images, _ = display_pdf_and_convert_to_image(file_content)
+                        if images:
+                            st.image(images[0], use_column_width=True)
                 else:
-                    st.session_state.selected_file = selected_file
-                    st.session_state.selected_json = json_files.get(os.path.splitext(selected_file)[0])
-                    st.session_state.current_page = 0    # Reset to first page when a new file is selected
-# Update this block to add a spinner
-if 'selected_file' in st.session_state and st.session_state.selected_file:
-    selected_file = st.session_state.selected_file
-    selected_folder = st.session_state.selected_folder
-    selected_json = st.session_state.selected_json
-    
-    with st.spinner('Loading ...'):
-        # Download and display file as images or PDF pages
-        with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-            sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
-            if selected_file.endswith('.pdf'):
-                with sftp.open(selected_file, 'rb') as file:
-                    file_content = file.read()
-                    images, _ = display_pdf_and_convert_to_image(file_content)
-                    if images:
-                        st.image(images[0], use_column_width=True)
-            else:
-                with sftp.open(selected_file, 'rb') as file:
-                    img = Image.open(file)
-                    st.image(img, use_column_width=True)
+                    with sftp.open(selected_file, 'rb') as file:
+                        img = Image.open(file)
+                        st.image(img, use_column_width=True)
 
-        # Score field and submit button
-        score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
+            # Score field and submit button
+            score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
 
-        if st.button("Done and Submit", type="primary", key='done_submit'):
-            # Collect all form data
-            form_data = {
-                "Document Label": selected_file,
-                "Score": score,
-            }
+            if st.button("Done and Submit", type="primary", key='done_submit'):
+                # Collect all form data
+                form_data = {
+                    "Document Label": selected_file,
+                    "Score": score,
+                }
 
-            if selected_folder == 'Bankstatement':
-                form_data.update({
-                    "information_details": st.session_state.edited_info_details,
-                    "transaction_details": [
-                        {
-                            "transactions": st.session_state.edited_transactions[i],
-                            "transaction_summary": st.session_state.edited_transaction_summary[i]
-                        } for i in range(len(st.session_state.edited_transactions))
-                    ],
-                    "time_deposit_details": st.session_state.edited_time_deposit_details
-                })
-            elif selected_folder == 'Receipt':
-                form_data.update(st.session_state.edited_info_details)
-                form_data.update({
-                    "item_no_of_receipt_items": st.session_state.edited_transactions["item_no_of_receipt_items"],
-                    "names_of_receipt_items": st.session_state.edited_transactions["names_of_receipt_items"],
-                    "quantities_of_invoice_items": st.session_state.edited_transactions["quantities_of_invoice_items"],
-                    "unit_prices_of_receipt_items": st.session_state.edited_transactions["unit_prices_of_receipt_items"],
-                    "gross_worth_of_receipt_items": st.session_state.edited_transactions["gross_worth_of_receipt_items"],
-                })
-            elif selected_folder == 'Invoice':
-                form_data.update(st.session_state.edited_info_details)
-                form_data.update({
-                    "item_no_of_invoice_items": st.session_state.edited_transactions["item_no_of_invoice_items"],
-                    "names_of_invoice_items": st.session_state.edited_transactions["names_of_invoice_items"],
-                    "quantities_of_invoice_items": st.session_state.edited_transactions["quantities_of_invoice_items"],
-                    "unit_prices_of_invoice_items": st.session_state.edited_transactions["unit_prices_of_invoice_items"],
-                    "gross_worth_of_invoice_items": st.session_state.edited_transactions["gross_worth_of_invoice_items"],
-                })
-            elif selected_folder == 'Business Card':
-                form_data.update(st.session_state.edited_info_details)
+                if selected_folder == 'Bankstatement':
+                    form_data.update({  
+                        "information_details": st.session_state.edited_info_details,
+                        "transaction_details": [
+                            {
+                                "transactions": st.session_state.edited_transactions[i],
+                                "transaction_summary": st.session_state.edited_transaction_summary.get(i, [])
+                            } for i in range(len(st.session_state.edited_transactions))
+                        ],
+                        "time_deposit_details": st.session_state.edited_time_deposit_details
+                    })
+                elif selected_folder == 'Receipt':
+                    form_data.update(st.session_state.edited_info_details)
+                    form_data.update({
+                        "item_no_of_receipt_items": st.session_state.edited_transactions.get("item_no_of_receipt_items", []),
+                        "names_of_receipt_items": st.session_state.edited_transactions.get("names_of_receipt_items", []),
+                        "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", []),
+                        "unit_prices_of_receipt_items": st.session_state.edited_transactions.get("unit_prices_of_receipt_items", []),
+                        "gross_worth_of_receipt_items": st.session_state.edited_transactions.get("gross_worth_of_receipt_items", []),
+                    })
+                elif selected_folder == 'Invoice':
+                    form_data.update(st.session_state.edited_info_details)
+                    form_data.update({
+                        "item_no_of_invoice_items": st.session_state.edited_transactions.get("item_no_of_invoice_items", []),
+                        "names_of_invoice_items": st.session_state.edited_transactions.get("names_of_invoice_items", []),
+                        "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", []),
+                        "unit_prices_of_invoice_items": st.session_state.edited_transactions.get("unit_prices_of_invoice_items", []),
+                        "gross_worth_of_invoice_items": st.session_state.edited_transactions.get("gross_worth_of_invoice_items", []),
+                    })
+                elif selected_folder == 'Business Card':
+                    form_data.update(st.session_state.edited_info_details)
 
-            # Write JSON data to a temporary file
-            json_filename = f"{os.path.splitext(selected_file)[0]}.json"
-            if json_filename:
-                with open(json_filename, 'w') as json_file:
-                    json.dump(form_data, json_file, indent=4)
+                # Write JSON data to a temporary file
+                json_filename = f"{os.path.splitext(selected_file)[0]}.json"
+                if json_filename:
+                    with open(json_filename, 'w') as json_file:
+                        json.dump(form_data, json_file, indent=4)
 
-                # Upload updated JSON file back to SFTP with the original name
-                updated_json_path = os.path.join(sftp_root_directory, selected_folder, json_filename)
-                with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                    sftp.put(json_filename, updated_json_path)
-                    st.success(f"File {json_filename} uploaded successfully to {os.path.join(sftp_root_directory, selected_folder)}!")
+                    # Upload updated JSON file back to SFTP with the original name
+                    updated_json_path = os.path.join(sftp_root_directory, selected_folder, json_filename)
+                    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                        sftp.cwd(os.path.join(sftp_root_directory, selected_folder))  # Change to the correct directory
+                        sftp.put(json_filename, json_filename)  # Upload the file with the original name
+                        st.success(f"File {json_filename} uploaded successfully to {os.path.join(sftp_root_directory, selected_folder)}!")
 
-                # Provide download button for JSON file
-                with open(json_filename, 'r') as json_file:
-                    json_data = json_file.read()
-                st.download_button("Download JSON", json_data, json_filename, "application/json", key='download_json')
-                st.success("Data submitted and uploaded successfully!")
+                    # Provide download button for JSON file
+                    with open(json_filename, 'r') as json_file:
+                        json_data = json_file.read()
+                    st.download_button("Download JSON", json_data, json_filename, "application/json", key='download_json')
+                    st.success("Data submitted and uploaded successfully!")
 
 # Display JSON content in the left column with tabs and subtabs
 with col1:
