@@ -42,6 +42,7 @@ sftp_host = "hotfolder.epik.live"
 sftp_username = "spf"
 sftp_password = "1234@BCD"
 sftp_root_directory = "/home/spf/watching_folder/"
+sftp_threeway_directory = "/home/spf/threeway_matching"
 
 # Custom SFTP options to bypass hostkey checking
 cnopts = pysftp.CnOpts()
@@ -208,8 +209,76 @@ def process_json_content(json_content, selected_folder):
             card_info[field] = st.text_input(label=field.replace("_", " ").title(), value=value, key=f"{field}_input")
         st.session_state.edited_info_details = card_info
 
+    elif selected_folder == 'threeway_matching':
+        tabs = st.tabs(["File Data View", "Comparison View"])
+        with tabs[0]:
+            st.markdown("### General Information")
+            general_info_fields = [
+                "invoice_number", "purchase_order_number", "document_date", "client_name", "client_address",
+                "sale_order_number", "client_tax_id", "seller_name", "seller_address",
+                "seller_tax_id", "iban", "total_net_worth", "tax_amount",
+                "tax_percent", "total_gross_worth"
+            ]
+            general_info = {field: json_content.get(field, "") for field in general_info_fields}
+            for field, value in general_info.items():
+                general_info[field] = st.text_input(label=field.replace("_", " ").title(), value=value, key=f"{field}_input")
+            st.session_state.edited_info_details = general_info
 
+            st.markdown("### Line Items")
+            line_items_fields = [
+                "item_no_of_invoice_items", "names_of_invoice_items",
+                "quantities_of_invoice_items", "unit_prices_of_invoice_items",
+                "gross_worth_of_invoice_items"
+            ]
+            line_items = {field: json_content.get(field, []) for field in line_items_fields}
+            line_items_df = pd.DataFrame(line_items)
+            edited_line_items = st.data_editor(line_items_df, num_rows="dynamic", key='line_items_editor')
+            st.session_state.edited_transactions = edited_line_items.to_dict(orient='records')
 
+        with tabs[1]:
+            st.markdown("### Comparison View")
+
+            # Extract the common part from the filename
+            base_name = os.path.splitext(selected_file)[0]  # Remove the extension
+            common_part = "_".join(base_name.split("_")[1:])
+            comparison_file = f"PO_{common_part}.json"
+
+            comparison_json = {}
+            try:
+                with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                    sftp.cwd(sftp_threeway_directory)
+                    if comparison_file in sftp.listdir():
+                        with sftp.open(comparison_file, 'r') as json_file:
+                            comparison_json = json.load(json_file)
+                    else:
+                        st.error(f"No comparison file found: {comparison_file}")
+            except FileNotFoundError:
+                st.error(f"No comparison file found: {comparison_file}")
+
+            if comparison_json:
+                combined_line_items = {
+                    "Invoice Item No": json_content.get("item_no_of_invoice_items", []),
+                    "PO Item No": comparison_json.get("item_no_of_invoice_items", []),
+                    "Invoice Item Name": json_content.get("names_of_invoice_items", []),
+                    "PO Item Name": comparison_json.get("names_of_invoice_items", []),
+                    "Invoice Quantity": json_content.get("quantities_of_invoice_items", []),
+                    "PO Quantity": comparison_json.get("quantities_of_invoice_items", []),
+                    "Invoice Unit Price": json_content.get("unit_prices_of_invoice_items", []),
+                    "PO Unit Price": comparison_json.get("unit_prices_of_invoice_items", []),
+                    "Invoice Gross Worth": json_content.get("gross_worth_of_invoice_items", []),
+                    "PO Gross Worth": comparison_json.get("gross_worth_of_invoice_items", []),
+                }
+                combined_line_items_df = pd.DataFrame(combined_line_items)
+
+                # Style function to highlight columns in pairs
+                def highlight_columns(x):
+                    color = 'background-color: #c0ffbc'
+                    df1 = pd.DataFrame('', index=x.index, columns=x.columns)
+                    df1.iloc[:, ::2] = color
+                    return df1
+
+                styled_df = combined_line_items_df.style.apply(highlight_columns, axis=None)
+                st.dataframe(styled_df)
 # Function to reset other selectbox selections
 def reset_selections(except_folder):
     for folder in all_folders:
@@ -217,20 +286,28 @@ def reset_selections(except_folder):
             if f"{folder}_file_selector" in st.session_state:
                 del st.session_state[f"{folder}_file_selector"]
 
-# Sidebar menu
-selected_page = st.sidebar.radio("Select Page", ["Bankstatement", "Invoice", "Receipt", "Business Card"])
+# Sidebar with navigation
+page = st.sidebar.radio("Choose a page:", ["Bankstatement", "Invoice", "Receipt", "Business Card", "3-Way Matching"])
+
+selected_folder = ""
+if page == "3-Way Matching":
+    selected_folder = "threeway_matching"
+else:
+    selected_folder = page
 
 # Create the two-column layout
 col2, col1 = st.columns([4.5, 5.5])
 
 # Display the folders and their files in dropdowns within an expander
 with col2:
-    st.subheader(f'PreFlight Cockpit - {selected_page}', divider='rainbow')
-    with st.expander("Select Document"):
-        folder = selected_page
+        st.subheader(f'{page} Document', divider='rainbow')
+    
         try:
             with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                sftp.cwd(os.path.join(sftp_root_directory, folder))
+                if selected_folder == "threeway_matching":
+                    sftp.cwd(sftp_threeway_directory)
+                else:
+                    sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
                 all_files = sftp.listdir()
         except SSHException as e:
             st.error(f"SSHException: {e}")
@@ -239,94 +316,119 @@ with col2:
         supported_files = [f for f in all_files if f.endswith(('.pdf', '.png', '.jpg', '.jpeg'))]
         json_files = {os.path.splitext(f)[0]: f for f in all_files if f.endswith('.json')}
         
-        selected_file = st.selectbox(f"Select a file from {folder}", options=[""] + supported_files, index=0, key=f"{folder}_file_selector")
+        selected_file = st.selectbox(f"Select a file from {page}", options=[""] + supported_files, index=0, key=f"{selected_folder}_file_selector")
         if selected_file:
-            st.session_state.selected_file = selected_file
-            st.session_state.selected_folder = folder
-            st.session_state.selected_json = json_files.get(os.path.splitext(selected_file)[0])
-            st.session_state.current_page = 0  # Reset to first page when a new file is selected
+            # Clear previous selections if folder changes
+            if st.session_state.selected_folder != selected_folder:
+                st.session_state.selected_file = selected_file
+                st.session_state.selected_folder = selected_folder
+                st.session_state.selected_json = json_files.get(os.path.splitext(selected_file)[0])
+                st.session_state.current_page = 0  # Reset to first page when a new file is selected
+            else:
+                st.session_state.selected_file = selected_file
+                st.session_state.selected_json = json_files.get(os.path.splitext(selected_file)[0])
+                st.session_state.current_page = 0    # Reset to first page when a new file is selected
 
-    # Update this block to add a spinner
-    if 'selected_file' in st.session_state and st.session_state.selected_file:
-        selected_file = st.session_state.selected_file
-        selected_folder = st.session_state.selected_folder
-        selected_json = st.session_state.selected_json
-        
-        with st.spinner('Loading ...'):
-            # Download and display file as images or PDF pages
-            with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
-                if selected_file.endswith('.pdf'):
-                    with sftp.open(selected_file, 'rb') as file:
-                        file_content = file.read()
-                        images, _ = display_pdf_and_convert_to_image(file_content)
-                        if images:
-                            st.image(images[0], use_column_width=True)
-                else:
-                    with sftp.open(selected_file, 'rb') as file:
-                        img = Image.open(file)
-                        st.image(img, use_column_width=True)
+        if 'selected_file' in st.session_state and st.session_state.selected_file:
+            selected_file = st.session_state.selected_file
+            selected_folder = st.session_state.selected_folder
+            selected_json = st.session_state.selected_json
+            
+            with st.spinner('Loading ...'):
+                # Download and display file as images or PDF pages
+                with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                    if selected_folder == "threeway_matching":
+                        sftp.cwd(sftp_threeway_directory)
+                    else:
+                        sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
+                    if selected_file.endswith('.pdf'):
+                        with sftp.open(selected_file, 'rb') as file:
+                            file_content = file.read()
+                            images, _ = display_pdf_and_convert_to_image(file_content)
+                            if images:
+                                st.image(images[0], use_column_width=True)
+                    else:
+                        with sftp.open(selected_file, 'rb') as file:
+                            img = Image.open(file)
+                            st.image(img, use_column_width=True)
 
-            # Score field and submit button
-            score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
+                # Score field and submit button
+                score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
 
-            if st.button("Done and Submit", type="primary", key='done_submit'):
-                # Collect all form data
-                form_data = {
-                    "Document Label": selected_file,
-                    "Score": score,
-                }
+                if st.button("Done and Submit", type="primary", key='done_submit'):
+                    # Collect all form data
+                    form_data = {
+                        "Document Label": selected_file,
+                        "Score": score,
+                    }
 
-                if selected_folder == 'Bankstatement':
-                    form_data.update({  
-                        "information_details": st.session_state.edited_info_details,
-                        "transaction_details": [
-                            {
-                                "transactions": st.session_state.edited_transactions[i],
-                                "transaction_summary": st.session_state.edited_transaction_summary.get(i, [])
-                            } for i in range(len(st.session_state.edited_transactions))
-                        ],
-                        "time_deposit_details": st.session_state.edited_time_deposit_details
-                    })
-                elif selected_folder == 'Receipt':
-                    form_data.update(st.session_state.edited_info_details)
-                    form_data.update({
-                        "item_no_of_receipt_items": st.session_state.edited_transactions.get("item_no_of_receipt_items", []),
-                        "names_of_receipt_items": st.session_state.edited_transactions.get("names_of_receipt_items", []),
-                        "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", []),
-                        "unit_prices_of_receipt_items": st.session_state.edited_transactions.get("unit_prices_of_receipt_items", []),
-                        "gross_worth_of_receipt_items": st.session_state.edited_transactions.get("gross_worth_of_receipt_items", []),
-                    })
-                elif selected_folder == 'Invoice':
-                    form_data.update(st.session_state.edited_info_details)
-                    form_data.update({
-                        "item_no_of_invoice_items": st.session_state.edited_transactions.get("item_no_of_invoice_items", []),
-                        "names_of_invoice_items": st.session_state.edited_transactions.get("names_of_invoice_items", []),
-                        "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", []),
-                        "unit_prices_of_invoice_items": st.session_state.edited_transactions.get("unit_prices_of_invoice_items", []),
-                        "gross_worth_of_invoice_items": st.session_state.edited_transactions.get("gross_worth_of_invoice_items", []),
-                    })
-                elif selected_folder == 'Business Card':
-                    form_data.update(st.session_state.edited_info_details)
-
-                # Write JSON data to a temporary file
-                json_filename = f"{os.path.splitext(selected_file)[0]}.json"
-                if json_filename:
-                    with open(json_filename, 'w') as json_file:
-                        json.dump(form_data, json_file, indent=4)
-
-                    # Upload updated JSON file back to SFTP with the original name
-                    updated_json_path = os.path.join(sftp_root_directory, selected_folder, json_filename)
-                    with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                        sftp.cwd(os.path.join(sftp_root_directory, selected_folder))  # Change to the correct directory
-                        sftp.put(json_filename, json_filename)  # Upload the file with the original name
-                        st.success(f"File {json_filename} uploaded successfully to {os.path.join(sftp_root_directory, selected_folder)}!")
-
-                    # Provide download button for JSON file
+                    # Read original data
+                    json_filename = f"{os.path.splitext(selected_file)[0]}.json"
                     with open(json_filename, 'r') as json_file:
-                        json_data = json_file.read()
-                    st.download_button("Download JSON", json_data, json_filename, "application/json", key='download_json')
-                    st.success("Data submitted and uploaded successfully!")
+                        original_data = json.load(json_file)
+
+                    if selected_folder == 'Bankstatement':
+                        form_data.update({
+                            "information_details": st.session_state.edited_info_details,
+                            "transaction_details": [
+                                {
+                                    "transactions": st.session_state.edited_transactions[i],
+                                    "transaction_summary": st.session_state.edited_transaction_summary[i]
+                                } for i in range(len(st.session_state.edited_transactions))
+                            ],
+                            "time_deposit_details": st.session_state.edited_time_deposit_details
+                        })
+                    elif selected_folder == 'Receipt':
+                        form_data.update(st.session_state.edited_info_details)
+                        form_data.update({
+                            "item_no_of_receipt_items": st.session_state.edited_transactions.get("item_no_of_receipt_items", original_data.get("item_no_of_receipt_items", [])),
+                            "names_of_receipt_items": st.session_state.edited_transactions.get("names_of_receipt_items", original_data.get("names_of_receipt_items", [])),
+                            "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", original_data.get("quantities_of_invoice_items", [])),
+                            "unit_prices_of_receipt_items": st.session_state.edited_transactions.get("unit_prices_of_receipt_items", original_data.get("unit_prices_of_receipt_items", [])),
+                            "gross_worth_of_receipt_items": st.session_state.edited_transactions.get("gross_worth_of_receipt_items", original_data.get("gross_worth_of_receipt_items", [])),
+                        })
+                    elif selected_folder == 'Invoice':
+                        form_data.update(st.session_state.edited_info_details)
+                        form_data.update({
+                            "item_no_of_invoice_items": st.session_state.edited_transactions.get("item_no_of_invoice_items", original_data.get("item_no_of_invoice_items", [])),
+                            "names_of_invoice_items": st.session_state.edited_transactions.get("names_of_invoice_items", original_data.get("names_of_invoice_items", [])),
+                            "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", original_data.get("quantities_of_invoice_items", [])),
+                            "unit_prices_of_invoice_items": st.session_state.edited_transactions.get("unit_prices_of_invoice_items", original_data.get("unit_prices_of_invoice_items", [])),
+                            "gross_worth_of_invoice_items": st.session_state.edited_transactions.get("gross_worth_of_invoice_items", original_data.get("gross_worth_of_invoice_items", [])),
+                        })
+                    elif selected_folder == 'Business Card':
+                        form_data.update(st.session_state.edited_info_details)
+                    elif selected_folder == 'threeway_matching':
+                        form_data.update(st.session_state.edited_info_details)
+                        form_data.update({
+                            "item_no_of_invoice_items": [item.get("Invoice Item No", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("item_no_of_invoice_items", []),
+                            "names_of_invoice_items": [item.get("Invoice Item Name", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("names_of_invoice_items", []),
+                            "quantities_of_invoice_items": [item.get("Invoice Quantity", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("quantities_of_invoice_items", []),
+                            "unit_prices_of_invoice_items": [item.get("Invoice Unit Price", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("unit_prices_of_invoice_items", []),
+                            "gross_worth_of_invoice_items": [item.get("Invoice Gross Worth", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("gross_worth_of_invoice_items", []),
+                        })
+
+                    # Write JSON data to a temporary file
+                    if json_filename:
+                        with open(json_filename, 'w') as json_file:
+                            json.dump(form_data, json_file, indent=4)
+
+                        # Upload updated JSON file back to SFTP with the original name
+                        with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
+                            if selected_folder == "threeway_matching":
+                                sftp.cwd(sftp_threeway_directory)  # Change to the correct directory
+                            else:
+                                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))  # Change to the correct directory
+
+                            sftp.put(json_filename, json_filename)
+                            st.success(f"File {json_filename} uploaded successfully to {os.path.join(sftp_root_directory, selected_folder)}!")
+
+                        # Provide download button for JSON file
+                        with open(json_filename, 'r') as json_file:
+                            json_data = json_file.read()
+                        st.download_button("Download JSON", json_data, json_filename, "application/json", key='download_json')
+                        st.success("Data submitted and uploaded successfully!")
+
 
 # Display JSON content in the left column with tabs and subtabs
 with col1:
@@ -338,7 +440,10 @@ with col1:
         
         if selected_json:
             with pysftp.Connection(sftp_host, username=sftp_username, password=sftp_password, cnopts=cnopts) as sftp:
-                sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
+                if selected_folder == "threeway_matching":
+                    sftp.cwd(sftp_threeway_directory)
+                else:
+                    sftp.cwd(os.path.join(sftp_root_directory, selected_folder))
                 with sftp.open(selected_json, 'r') as json_file:
                     json_content = json.load(json_file)
 
