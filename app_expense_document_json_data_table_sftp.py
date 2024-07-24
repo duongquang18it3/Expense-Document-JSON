@@ -34,6 +34,7 @@ st.markdown("""
             margin-top: -20px;
             margin-left: 10px;
         }
+        
     </style>
 """, unsafe_allow_html=True)
 
@@ -210,7 +211,7 @@ def process_json_content(json_content, selected_folder):
         st.session_state.edited_info_details = card_info
 
     elif selected_folder == 'threeway_matching':
-        tabs = st.tabs(["File Data View", "Comparison View"])
+        tabs = st.tabs(["General Information", "Line Items","Comparison View"])
         with tabs[0]:
             st.markdown("### General Information")
             general_info_fields = [
@@ -224,6 +225,7 @@ def process_json_content(json_content, selected_folder):
                 general_info[field] = st.text_input(label=field.replace("_", " ").title(), value=value, key=f"{field}_input")
             st.session_state.edited_info_details = general_info
 
+        with tabs[1]:
             st.markdown("### Line Items")
             line_items_fields = [
                 "item_no_of_invoice_items", "names_of_invoice_items",
@@ -235,7 +237,7 @@ def process_json_content(json_content, selected_folder):
             edited_line_items = st.data_editor(line_items_df, num_rows="dynamic", key='line_items_editor')
             st.session_state.edited_transactions = edited_line_items.to_dict(orient='records')
 
-        with tabs[1]:
+        with tabs[2]:
             st.markdown("### Comparison View")
 
             # Extract the common part from the filename
@@ -279,6 +281,57 @@ def process_json_content(json_content, selected_folder):
 
                 styled_df = combined_line_items_df.style.apply(highlight_columns, axis=None)
                 st.dataframe(styled_df)
+
+                # Create new table with Fields, Invoice, and PO columns
+                fields = []
+                invoice_values = []
+                po_values = []
+
+                for key in ["item_no_of_invoice_items", "names_of_invoice_items", "quantities_of_invoice_items", "unit_prices_of_invoice_items", "gross_worth_of_invoice_items"]:
+                    for i, value in enumerate(json_content.get(key, [])):
+                        fields.append(f"{key} {i + 1}")
+                        invoice_values.append(value)
+                        po_values.append(comparison_json.get(key, [""] * len(invoice_values))[i])
+
+                comparison_table = pd.DataFrame({
+                    "Fields": fields,
+                    "Invoice": invoice_values,
+                    "PO": po_values
+                })
+                # Function to apply background color to specific rows
+                def highlight_discrepancies(data):
+                    attr = 'background-color: #ffcccc'  # Light red for discrepancies
+                    df1 = pd.DataFrame('', index=data.index, columns=data.columns)
+                    for i in range(len(data)):
+                        if data["Invoice"][i] != data["PO"][i] or pd.isnull(data["Invoice"][i]) or pd.isnull(data["PO"][i]):
+                            df1.iloc[i, 1] = attr  # Highlight Invoice column
+                            df1.iloc[i, 2] = attr  # Highlight PO column
+                    return df1
+
+                styled_comparison_table = comparison_table.style.apply(highlight_discrepancies, axis=None)
+                st.dataframe(styled_comparison_table, use_container_width=True)
+
+                # Summary Section
+                total_fields = len(fields)
+                matched = sum(i == j for i, j in zip(invoice_values, po_values))
+                mismatched = total_fields - matched
+                missing = po_values.count("")
+
+                st.markdown("### Summary View")
+                st.markdown(f"""
+                    **Matching Status:**
+                    - Total Fields: **{total_fields}**
+                    - :green[Matched] : **{matched}**
+                    - :red[Mismatched]: **{mismatched}**
+                    - Missing: **{missing}**
+
+                    **Discrepancy Details:**
+                """)
+                discrepancy_details = []
+                for field, inv_val, po_val in zip(fields, invoice_values, po_values):
+                    if inv_val != po_val:
+                        discrepancy_details.append(f"- {field}: Invoice Value: {inv_val}, PO Value: {po_val}")
+                st.markdown("\n".join(discrepancy_details))
 # Function to reset other selectbox selections
 def reset_selections(except_folder):
     for folder in all_folders:
@@ -362,18 +415,15 @@ with col2:
                         "Score": score,
                     }
 
-                    # Read original data
-                    json_filename = f"{os.path.splitext(selected_file)[0]}.json"
-                    with open(json_filename, 'r') as json_file:
-                        original_data = json.load(json_file)
+                    
 
                     if selected_folder == 'Bankstatement':
-                        form_data.update({
+                        form_data.update({  
                             "information_details": st.session_state.edited_info_details,
                             "transaction_details": [
                                 {
                                     "transactions": st.session_state.edited_transactions[i],
-                                    "transaction_summary": st.session_state.edited_transaction_summary[i]
+                                    "transaction_summary": st.session_state.edited_transaction_summary.get(i, [])
                                 } for i in range(len(st.session_state.edited_transactions))
                             ],
                             "time_deposit_details": st.session_state.edited_time_deposit_details
@@ -381,33 +431,34 @@ with col2:
                     elif selected_folder == 'Receipt':
                         form_data.update(st.session_state.edited_info_details)
                         form_data.update({
-                            "item_no_of_receipt_items": st.session_state.edited_transactions.get("item_no_of_receipt_items", original_data.get("item_no_of_receipt_items", [])),
-                            "names_of_receipt_items": st.session_state.edited_transactions.get("names_of_receipt_items", original_data.get("names_of_receipt_items", [])),
-                            "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", original_data.get("quantities_of_invoice_items", [])),
-                            "unit_prices_of_receipt_items": st.session_state.edited_transactions.get("unit_prices_of_receipt_items", original_data.get("unit_prices_of_receipt_items", [])),
-                            "gross_worth_of_receipt_items": st.session_state.edited_transactions.get("gross_worth_of_receipt_items", original_data.get("gross_worth_of_receipt_items", [])),
+                            "item_no_of_receipt_items": st.session_state.edited_transactions.get("item_no_of_receipt_items", []),
+                            "names_of_receipt_items": st.session_state.edited_transactions.get("names_of_receipt_items", []),
+                            "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", []),
+                            "unit_prices_of_receipt_items": st.session_state.edited_transactions.get("unit_prices_of_receipt_items", []),
+                            "gross_worth_of_receipt_items": st.session_state.edited_transactions.get("gross_worth_of_receipt_items", []),
                         })
                     elif selected_folder == 'Invoice':
                         form_data.update(st.session_state.edited_info_details)
                         form_data.update({
-                            "item_no_of_invoice_items": st.session_state.edited_transactions.get("item_no_of_invoice_items", original_data.get("item_no_of_invoice_items", [])),
-                            "names_of_invoice_items": st.session_state.edited_transactions.get("names_of_invoice_items", original_data.get("names_of_invoice_items", [])),
-                            "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", original_data.get("quantities_of_invoice_items", [])),
-                            "unit_prices_of_invoice_items": st.session_state.edited_transactions.get("unit_prices_of_invoice_items", original_data.get("unit_prices_of_invoice_items", [])),
-                            "gross_worth_of_invoice_items": st.session_state.edited_transactions.get("gross_worth_of_invoice_items", original_data.get("gross_worth_of_invoice_items", [])),
+                            "item_no_of_invoice_items": st.session_state.edited_transactions.get("item_no_of_invoice_items", []),
+                            "names_of_invoice_items": st.session_state.edited_transactions.get("names_of_invoice_items", []),
+                            "quantities_of_invoice_items": st.session_state.edited_transactions.get("quantities_of_invoice_items", []),
+                            "unit_prices_of_invoice_items": st.session_state.edited_transactions.get("unit_prices_of_invoice_items", []),
+                            "gross_worth_of_invoice_items": st.session_state.edited_transactions.get("gross_worth_of_invoice_items", []),
                         })
                     elif selected_folder == 'Business Card':
                         form_data.update(st.session_state.edited_info_details)
                     elif selected_folder == 'threeway_matching':
                         form_data.update(st.session_state.edited_info_details)
                         form_data.update({
-                            "item_no_of_invoice_items": [item.get("Invoice Item No", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("item_no_of_invoice_items", []),
-                            "names_of_invoice_items": [item.get("Invoice Item Name", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("names_of_invoice_items", []),
-                            "quantities_of_invoice_items": [item.get("Invoice Quantity", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("quantities_of_invoice_items", []),
-                            "unit_prices_of_invoice_items": [item.get("Invoice Unit Price", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("unit_prices_of_invoice_items", []),
-                            "gross_worth_of_invoice_items": [item.get("Invoice Gross Worth", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else original_data.get("gross_worth_of_invoice_items", []),
+                            "item_no_of_invoice_items": [item.get("item_no_of_invoice_items", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else [],
+                            "names_of_invoice_items": [item.get("names_of_invoice_items", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else [],
+                            "quantities_of_invoice_items": [item.get("quantities_of_invoice_items", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else [],
+                            "unit_prices_of_invoice_items": [item.get("unit_prices_of_invoice_items", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else [],
+                            "gross_worth_of_invoice_items": [item.get("gross_worth_of_invoice_items", "") for item in st.session_state.edited_transactions] if st.session_state.edited_transactions else [],
                         })
 
+                    json_filename = f"{os.path.splitext(selected_file)[0]}.json"
                     # Write JSON data to a temporary file
                     if json_filename:
                         with open(json_filename, 'w') as json_file:
