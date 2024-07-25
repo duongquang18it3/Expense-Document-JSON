@@ -211,7 +211,7 @@ def process_json_content(json_content, selected_folder):
         st.session_state.edited_info_details = card_info
 
     elif selected_folder == 'threeway_matching':
-        tabs = st.tabs(["General Information", "Line Items","Comparison View"])
+        tabs = st.tabs(["General Information", "Line Items","Comparison View", "Summary View"])
         with tabs[0]:
             st.markdown("### General Information")
             general_info_fields = [
@@ -243,7 +243,12 @@ def process_json_content(json_content, selected_folder):
             # Extract the common part from the filename
             base_name = os.path.splitext(selected_file)[0]  # Remove the extension
             common_part = "_".join(base_name.split("_")[1:])
-            comparison_file = f"PO_{common_part}.json"
+            if base_name.startswith("INV"):
+                comparison_file = f"PO_{common_part}.json"
+            elif base_name.startswith("PO"):
+                comparison_file = f"INV_{common_part}.json"
+            else:
+                comparison_file = None
 
             comparison_json = {}
             try:
@@ -311,7 +316,9 @@ def process_json_content(json_content, selected_folder):
                 styled_comparison_table = comparison_table.style.apply(highlight_discrepancies, axis=None)
                 st.dataframe(styled_comparison_table, use_container_width=True)
 
-                # Summary Section
+                
+        with tabs[3]:
+            # Summary Section
                 total_fields = len(fields)
                 matched = sum(i == j for i, j in zip(invoice_values, po_values))
                 mismatched = total_fields - matched
@@ -332,6 +339,7 @@ def process_json_content(json_content, selected_folder):
                     if inv_val != po_val:
                         discrepancy_details.append(f"- {field}: Invoice Value: {inv_val}, PO Value: {po_val}")
                 st.markdown("\n".join(discrepancy_details))
+
 # Function to reset other selectbox selections
 def reset_selections(except_folder):
     for folder in all_folders:
@@ -405,14 +413,12 @@ with col2:
                             img = Image.open(file)
                             st.image(img, use_column_width=True)
 
-                # Score field and submit button
-                score = st.number_input(label="Score", min_value=0, max_value=100, value=0, step=1, key='score_input')
+                
 
                 if st.button("Done and Submit", type="primary", key='done_submit'):
                     # Collect all form data
                     form_data = {
-                        "Document Label": selected_file,
-                        "Score": score,
+                        "Document Label": selected_file
                     }
 
                     
