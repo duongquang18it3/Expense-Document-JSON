@@ -1,7 +1,10 @@
 streamlit
 Pillow
-PyMuPDF
-pandas
+numpy
+pytesseract
+streamlit-drawable-canvas
 pysftp
+PyMuPDF
+pyperclip
 paramiko
-streamlit-aggrid
+pandas
