@@ -1,7 +1,6 @@
 import streamlit as st
 from PIL import Image, ImageFilter
 import numpy as np
-import pytesseract
 from streamlit_drawable_canvas import st_canvas
 import pysftp
 import json
